@@ -1,0 +1,5 @@
+/settingsbackup
+*.exe
+bin
+.vscode
+*.code-workspace
