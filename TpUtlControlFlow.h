@@ -18,7 +18,7 @@ namespace Tp
                 fnc.template operator()<value>();
             }
         };
-
+        
         template <typename LAMBDA_T, auto value, auto... values>
         struct ForEachHelper<LAMBDA_T, value, values...>
         {
