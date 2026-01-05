@@ -3,8 +3,11 @@
 namespace Tp
 {
     template<typename T>
-    concept CIterableContainer = requires (T x){x.begin();};
-
+    concept CStdString = requires (T x){x.substr(0);};
+ 
+    template<typename T>
+    concept CIterableContainer = !CStdString<T> && requires (T x){x.begin();};
+   
     template<typename T>
     concept CInsertContainer =  CIterableContainer<T> && requires (T x, typename T::value_type v){x.insert(v);};
 

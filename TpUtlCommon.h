@@ -4,11 +4,36 @@
 #include <string>
 #include <type_traits>
 #include <iostream>
+#include <vector>
+#include <set>
+#include <unordered_set>
+#include <map>
+#include <unordered_map>
+#include <assert.h>
+#include <ranges>
+#include <fstream>
+#include <cstdint>
+#include <sstream>
+#include <random>
+#include <limits>
+#include <cstdlib>
+#include <ctime>
+#include <filesystem>
+#include <stack>
+#include <optional>
 
 #include "TpUtlTypeTemplates.h"
 #include "TpUtlControlFlow.h"
 #include "TpUtlMetaTemplates.h"
 #include "TpUtlPreprocessor.h"
+#include "TpUtlStlOperators.h"
+#include "TpUtlIdPool.h"
+#include "TpUtlScopeGuard.h"
+
+
+
+enum class Cardinal8 {N,NW,W,SW,S,SE,E,NE};
+enum class Cardinal4 {N,W,S,E};
 
 using u64 = uint64_t;
 using u32 = uint32_t;
@@ -18,8 +43,21 @@ using ch8 = char;
 using u8 = uint8_t;
 using i8 = int8_t;
 
+template<typename T> using Vec = std::vector<T>;
+template<typename T> using BSet = std::set<T>;
+template<typename T> using HSet = std::unordered_set<T>;
+template<typename T,size_t I> using Block = std::array<T,I>;
+template<typename U, typename V> using BMap = std::map<U,V>;
+template<typename U, typename V> using HMap = std::unordered_map<U,V>;
+
+
 namespace Tp
 {
+    using std::cout;
+    using std::endl;
+    using namespace std::ranges;
+    using namespace std::views;
+    
     namespace Dt
     {
         //Base case where the compiler searched for a specialization of DESCRIPTOR_INFO_TEMPLATE with the typename RSVD_COUNTING_SPECIALIZATIONS but did not find one.
@@ -72,7 +110,7 @@ namespace Tp
     {
         template <typename HOLDER_T, size_t INDEX>
         using DescriptorHead_t = typename HOLDER_T::template RSVD_DESCRIPTOR_INFO_T<INDEX, struct RSVD_COUNTING_TOKEN>;
-
+        
         template <typename HOLDER_T, size_t INDEX>
         auto & getOffset()
         {
@@ -97,24 +135,58 @@ namespace Tp
         template<typename HOLDER_T>
         constexpr size_t getDescriptorCount()
         {
-            return ::Tp::Dt::CountPartialSpecializations<struct RSVD_RESULT_IDENTIFIER, TEMPLATE_MEMBER(HOLDER_T,RSVD_DESCRIPTOR_INFO_T)>::value;
+            if constexpr(requires {::Tp::Dt::CountPartialSpecializations<struct RSVD_RESULT_IDENTIFIER, TEMPLATE_MEMBER(HOLDER_T,RSVD_DESCRIPTOR_INFO_T)>::value; } )
+            {
+                return ::Tp::Dt::CountPartialSpecializations<struct RSVD_RESULT_IDENTIFIER, TEMPLATE_MEMBER(HOLDER_T,RSVD_DESCRIPTOR_INFO_T)>::value;
+            }
+            else
+            {
+                return 0;
+            }
         }
+        
+        template<typename HOLDER_T,typename DESCRIPTOR_T>
+        constexpr size_t countDescriptorInstances()
+        {
+            if constexpr( requires { ::Tp::Dt::CountPartialSpecializations<struct RSVD_RESULT_IDENTIFIER, TEMPLATE_MEMBER(HOLDER_T,RSVD_DESCRIPTOR_INFO_T)>::value; } )
+            {
+                size_t ret = 0;
+                constexpr auto numDescriptors = getDescriptorCount<HOLDER_T>();
+                forEachInRange<0,numDescriptors>([&]<auto INDEX>(){
+                    using Head_t = DescriptorHead_t<HOLDER_T,INDEX>;
+                    constexpr const auto & descriptor = Head_t::descriptor;
+                    if constexpr(CSameBaseType<DESCRIPTOR_T,typename Head_t::UserDescriptor_t>)
+                    {
+                        ret++;
+                    }
+                });
+                return ret;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        
+        template<typename HOLDER_T,typename DESCRIPTOR_T>
+        concept CHasDescriptorInstance = requires { countDescriptorInstances<HOLDER_T,DESCRIPTOR_T>() > 0; } && countDescriptorInstances<HOLDER_T,DESCRIPTOR_T>() > 0;
 
         template<typename HOLDER_T, typename DESCRIPTOR_T, typename LAMBDA_T>
-        size_t forEachDescriptor(LAMBDA_T fnc)
+        void forEachDescriptor(LAMBDA_T fnc)
         {
-            constexpr auto numDescriptors = getDescriptorCount<HOLDER_T>();
-            
-            forEachInRange<0,numDescriptors>([&]<auto INDEX>(){
-                using Head_t = DescriptorHead_t<HOLDER_T,INDEX>;
-                constexpr const auto & descriptor = Head_t::descriptor;
-                if constexpr(CSameBaseType<DESCRIPTOR_T,typename Head_t::UserDescriptor_t>)
-                {
-                    fnc.template operator()<descriptor>();
-                }
-            });
-
-            return 0;
+            if constexpr( requires { ::Tp::Dt::CountPartialSpecializations<struct RSVD_RESULT_IDENTIFIER, TEMPLATE_MEMBER(HOLDER_T,RSVD_DESCRIPTOR_INFO_T)>::value; } )
+            {
+                constexpr auto numDescriptors = getDescriptorCount<HOLDER_T>();
+                
+                forEachInRange<0,numDescriptors>([&]<auto INDEX>(){
+                    using Head_t = DescriptorHead_t<HOLDER_T,INDEX>;
+                    constexpr const auto & descriptor = Head_t::descriptor;
+                    if constexpr(CSameBaseType<DESCRIPTOR_T,typename Head_t::UserDescriptor_t>)
+                    {
+                        fnc.template operator()<descriptor>();
+                    }
+                });
+            }
         }
     }
 }
@@ -123,47 +195,49 @@ namespace Tp
     ::Tp::Reflect::forEachDescriptor<HOLDER_T,DESCRIPTOR_T>([&]<auto DESCRIPTOR_ALIAS>()
 #define TP_DONE );
 
+
 #define TP_DESCRIPTOR_MEMBER_POINTER(x)
 
-#define TP_ADD_DESCRIPTOR(MBR_NAME, DESCRIPTOR_NAME, ...)                                                                                                 \
+#define TP_ADD_DESCRIPTOR(MBR_NAME,...)                                                                                                 \
                                                                                                                                                         \
     /* Template class that holds the metadata - This line is possibly redundant - RSVD_DESCRIPTOR_INFO_T might already have been declared */            \
     template <size_t, typename>                                                                                                                         \
     struct RSVD_DESCRIPTOR_INFO_T;                                                                                                                      \
                                                                                                                                                         \
-    static constexpr size_t Rsvd_MemberIndex_##MBR_NAME##DESCRIPTOR_NAME =                                                                              \
-        Tp::Dt::CountPartialSpecializations<struct Rsvd_Arbitrary_##MBR_NAME##DESCRIPTOR_NAME, RSVD_DESCRIPTOR_INFO_T>::value;                          \
+    static constexpr size_t TP_PP_CAT(Rsvd_MemberIndex_,MBR_NAME,__LINE__) =                                                                     \
+        Tp::Dt::CountPartialSpecializations<struct TP_PP_CAT(Rsvd_Arbitrary_,MBR_NAME,__LINE__), RSVD_DESCRIPTOR_INFO_T>::value;                 \
                                                                                                                                                         \
     template <typename HOLDER_T>                                                                                                                        \
-    struct RSVD_DESCRIPTOR_INFO_T<Rsvd_MemberIndex_##MBR_NAME##DESCRIPTOR_NAME, HOLDER_T>   \
-    {                                                                                       \
-        using RSVD_COUNTING_SPECIALIZATIONS = int;                                          \
-        static constexpr auto index = Rsvd_MemberIndex_##MBR_NAME##DESCRIPTOR_NAME;         \
-        static constexpr std::string_view memberName = #MBR_NAME;                           \
-                                                                                            \
-        using type = decltype(MBR_NAME);                                                    \
-                                                                                            \
-        template <typename HOLDER__T>                                                       \
-        static constexpr auto memberPointer = &HOLDER__T::MBR_NAME;                         \
-                                                                                            \
-        using UserDescriptor_t = DESCRIPTOR_NAME;                                           \
-                                                                                            \
-        struct CommonDescriptor_t                                                           \
-        {                                                                                   \
-            using Holder_t = HOLDER_T;                                                      \
-            static constexpr auto index = Rsvd_MemberIndex_##MBR_NAME##DESCRIPTOR_NAME;     \
-            static constexpr std::string_view memberName = #MBR_NAME;                       \
-            using type = decltype(MBR_NAME);                                                \
-                                                                                            \
-            template <typename HOLDER__T>                                                   \
-            static constexpr auto memberPointer = &HOLDER__T::MBR_NAME;                     \
-        };                                                                                  \
-        struct Descriptor_t                                                                 \
-        {                                                                                   \
-            static constexpr CommonDescriptor_t common = {};                                \
-            static constexpr auto user = __VA_ARGS__;                                       \
-        };                                                                                  \
-        static constexpr Descriptor_t descriptor = {};                                      \
+    struct RSVD_DESCRIPTOR_INFO_T<TP_PP_CAT(Rsvd_MemberIndex_,MBR_NAME,__LINE__), HOLDER_T>   \
+    {                                                                                                \
+        using RSVD_COUNTING_SPECIALIZATIONS = int;                                                   \
+        static constexpr auto index = TP_PP_CAT(Rsvd_MemberIndex_,MBR_NAME,__LINE__);         \
+        static constexpr std::string_view memberName = #MBR_NAME;                                    \
+                                                                                                     \
+        using type = decltype(MBR_NAME);                                                             \
+                                                                                                     \
+        template <typename HOLDER__T>                                                                \
+        static constexpr auto memberPointer = &HOLDER__T::MBR_NAME;                                  \
+                                                                                                     \
+        struct CommonDescriptor_t                                                                    \
+        {                                                                                            \
+            using Holder_t = HOLDER_T;                                                               \
+            static constexpr auto index = TP_PP_CAT(Rsvd_MemberIndex_,MBR_NAME,__LINE__);     \
+            static constexpr std::string_view memberName = #MBR_NAME;                                \
+            using type = decltype(MBR_NAME);                                                         \
+                                                                                                     \
+            template <typename HOLDER__T>                                                            \
+            static constexpr auto memberPointer = &HOLDER__T::MBR_NAME;                              \
+        };                                                                                           \
+        struct Descriptor_t                                                                          \
+        {                                                                                            \
+            static constexpr CommonDescriptor_t common = {};                                         \
+            static constexpr auto user = __VA_ARGS__;                                                \
+        };                                                                                           \
+        static constexpr Descriptor_t descriptor = {};                                               \
+        using UserDescriptor_t = decltype(Descriptor_t::user);                                       \
     };
 
 
+#include "TpUtlString.h"
+#include "TpUtlLogging.h"

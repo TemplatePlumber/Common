@@ -2,7 +2,10 @@ BIN = bin
 TARGET = $(BIN)/RdUtlCommon
 
 # Define the source files
-SOURCES = RdUtlCommon.cpp
+SOURCES = TpUtlCommon.cpp TpUtlIdPool.cpp
+INCLUDE = -I../../ThirdParty/boost_1_90_0 -I../../ThirdParty/libbacktrace
+LIBS = -ldbghelp -lbacktrace -ldbgeng -lole32
+LIB_PATHS = -L../../ThirdParty/libbacktrace/.libs 
 
 # Define the object files (derived from source files)
 OBJECTS = $(SOURCES:.c=.o)
@@ -20,11 +23,11 @@ endif
 # Rule to link the executable from object files
 $(TARGET): $(OBJECTS)
 	@$(MKD) $(BIN)
-	g++ -o $(TARGET) $(OBJECTS) -std=c++23
+	g++ -ggdb3 -O0 -o $(TARGET) $(OBJECTS) -std=c++23 $(LIBS) $(LIB_PATHS) $(INCLUDE)
 
 # Rule to compile a cpp files into .o files
 %.o: %.cpp
-	g++ -c $< -o $@ -std=c++23
+	g++ -ggdb3 -O0 -c $< -o $@ -std=c++23 $(INCLUDE)
 
 # Phony target for cleaning up generated files
 .PHONY: clean

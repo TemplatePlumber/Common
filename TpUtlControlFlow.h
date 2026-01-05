@@ -69,4 +69,16 @@ namespace Tp
     }
 
 
+    struct AssertException{ const std::string & msg; };
 }
+
+#define TP_RETURN_IF(CONDITION,...) if(CONDITION){ return __VA_ARGS__; }
+#define TP_LOG(FMT,...)
+#define TP_ERROR_CHECKING_BGN try {
+#define TP_CHECK(condition) if(!condition){throw Tp::AssertException{.msg = #condition}; }
+#define TP_ERROR_CHECKING_END \
+    }\
+    catch(const Tp::AssertException & exception) \
+    {\
+        TP_LOG("Error: {}",exception.msg);\
+    }

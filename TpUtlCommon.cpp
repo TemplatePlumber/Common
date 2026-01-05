@@ -1,4 +1,9 @@
 #include "TpUtlCommon.h"
+#include <windows.h>
+#include <dbghelp.h>
+#include <iostream>
+#include <tchar.h>
+
 
 
 // Metadata struct used to mark up class members in reflection.
@@ -19,16 +24,17 @@ struct MyStruct
     char myCharMember = 'a';
     std::string myStringMember = "abc";
      
-    TP_ADD_DESCRIPTOR(myIntMember, SerializeInfo, SerializeInfo{});
-    TP_ADD_DESCRIPTOR(myIntMember, PrintInfo, PrintInfo{});
-    TP_ADD_DESCRIPTOR(myStringMember, SerializeInfo, SerializeInfo{});
-    TP_ADD_DESCRIPTOR(myCharMember, PrintInfo, PrintInfo{ .castToInteger = true });
+    TP_ADD_DESCRIPTOR(myIntMember, SerializeInfo{});
+    TP_ADD_DESCRIPTOR(myIntMember, PrintInfo{});
+    TP_ADD_DESCRIPTOR(myStringMember, SerializeInfo{});
+    TP_ADD_DESCRIPTOR(myCharMember, PrintInfo{.castToInteger = true});
 };
 
 int main()
 {
     MyStruct structInstance = {123};
 
+    
     constexpr auto numDescriptors = Tp::Reflect::getDescriptorCount<MyStruct>();
     std::cout << "There are "<< numDescriptors << " descriptors." << std::endl;
     /*
@@ -36,6 +42,7 @@ int main()
             There are 4 descriptors.
     */
 
+    
     /*
         Iterate over each descriptor, printing the name and value of the corresponding data member.
         Note that members that are marked with multiple descriptors will be printed twice.
@@ -51,6 +58,7 @@ int main()
             myStringMember=abc
             myCharMember=a
     */
+    
 
     //Iterate over every class member marked with 'PrintInfo'.
     TP_FOR_EACH_DESCRIPTOR(MyStruct,PrintInfo,descriptor)
