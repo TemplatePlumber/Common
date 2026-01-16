@@ -35,6 +35,157 @@ namespace Tp
     {
         Dt::ForEachHelper<LAMBDA_T, value, values...>::call(fnc);
     }
+    
+    
+    namespace Dt
+    {
+        template <typename LAMBDA_T, typename ... Ts>
+        struct ForEachTypeHelper {};
+
+        template <typename LAMBDA_T, typename T>
+        struct ForEachTypeHelper<LAMBDA_T, T>
+        {
+            constexpr static void call(LAMBDA_T fnc){ fnc.template operator()<T>(); }
+        };
+        
+        template <typename LAMBDA_T, typename T, typename ... Ts>
+        struct ForEachTypeHelper<LAMBDA_T, T, Ts...>
+        {
+            constexpr static void call(LAMBDA_T fnc)
+            {
+                fnc.template operator()<T>();
+                ForEachTypeHelper<LAMBDA_T, Ts...>::call(fnc);
+            }
+        };
+    }
+    
+    template <typename T, typename ... Ts, typename LAMBDA_T>
+    constexpr void forEachType(LAMBDA_T fnc)
+    {
+        Dt::ForEachTypeHelper<LAMBDA_T, T, Ts...>::call(fnc);
+    }
+    
+    
+    struct Pass{};
+    template<typename T> void PassIf(const T & condition) { if(condition) { throw Pass{}; } };
+    template<typename T> T * PassIfNull(T * ptr) { if(ptr == nullptr) { throw Pass{}; } return ptr; };
+
+    template<template <typename> typename CONTAINER_T, typename VALUE_T, typename FNC_T>
+    auto transform(const CONTAINER_T<VALUE_T> & container, FNC_T function)
+    {
+        using RET_VT = std::invoke_result_t<decltype(function), VALUE_T>;
+        CONTAINER_T<RET_VT> ret;
+        for(const auto & value : container)
+        {
+            try{ Tp::append(ret,function(value)); } catch(const Pass & pass){}
+        }
+        return ret;
+    }
+
+    template<typename CONTAINER_T, typename FNC_T> //requires CIterableContainer<CONTAINER_T>
+    auto filter(const CONTAINER_T & container, FNC_T function)
+    {
+        if constexpr (CIterableContainer<CONTAINER_T>)
+        {
+            CONTAINER_T ret;
+            for(const auto & value : container)
+            {
+                if(!function(value))
+                {
+                    Tp:append(ret,value);
+                }
+            }
+            return ret;
+        }
+        else
+        {
+            Opt<CONTAINER_T> ret;
+            if(!function(container))
+            {
+                ret = Tp::Pending;
+            }
+            else
+            {
+                ret = container;
+            }
+            return ret;
+        }
+    }
+    
+    //template<typename T> auto yieldFirstOrPass(const T & value);
+    
+    //template<typename CONTAINER_T> requires CIterableContainer<CONTAINER_T>
+    //typename CONTAINER_T::value_type yieldFirstOrPass(const CONTAINER_T & value)
+    //{
+    //    if(!value.empty())
+    //    {
+    //        auto ret = *value.begin();
+    //        return ret;
+    //    }
+    //    throw Pass{};
+    //}
+    
+    template<typename T>
+    auto yieldFirstOrPass(const Opt<T> & value)
+    {
+        if(!value)
+        {
+            throw Pass{};
+        }
+        return value.value();
+    }
+    
+    template<typename CONTAINER_T,typename T>
+    CONTAINER_T except(const CONTAINER_T & container, const T & value)
+    {
+        auto cpy = container;
+        size_t oldSize;
+        size_t newSize;
+        do
+        {
+            oldSize = cpy.size();
+            Tp::remove(cpy,value);
+            newSize = cpy.size();
+        }
+        while(oldSize != newSize);
+        return cpy;
+    }
+    
+    struct Transformer{};
+
+    #define TP_DECLARE_TRANSFORMER_0(NAME,FUNCTION) \
+        template<typename T> \
+        struct NAME : public Transformer \
+        { \
+            constexpr NAME(T v1) {} \
+            \
+            template<typename ... Ts> \
+            constexpr auto activate(Ts ... args) const { return FUNCTION(args...); } \
+        };
+    
+    #define TP_DECLARE_TRANSFORMER_1(NAME,FUNCTION) \
+        template<typename T> \
+        struct NAME : public Transformer \
+        { \
+            const T _v1; \
+            constexpr NAME(T v1) : _v1(v1) {} \
+            \
+            template<typename ... Ts> \
+            constexpr auto activate(Ts ... args) const { return FUNCTION(args...,_v1); } \
+        };
+
+    
+    TP_DECLARE_TRANSFORMER_1(Transform,transform);
+    TP_DECLARE_TRANSFORMER_1(Except,except);
+    TP_DECLARE_TRANSFORMER_1(Filter,filter);
+    TP_DECLARE_TRANSFORMER_0(YieldFirstOrPass,yieldFirstOrPass);
+    
+    
+    template<typename TRANSFORMER_T,typename CONTAINER_T> requires std::derived_from<TRANSFORMER_T,Transformer>
+    constexpr auto operator|(const CONTAINER_T & container, TRANSFORMER_T transformer)
+    {
+        return transformer.activate(container);
+    }
 
     /*
         Unroll a for-loop over the given range of [from,to).
@@ -73,6 +224,7 @@ namespace Tp
 }
 
 #define TP_RETURN_IF(CONDITION,...) if(CONDITION){ return __VA_ARGS__; }
+#define TP_ERR_RETURN_IF(CONDITION,...) if(CONDITION){ std::cout << "Condition failed: " #CONDITION << std::endl; return __VA_ARGS__; }
 #define TP_LOG(FMT,...)
 #define TP_ERROR_CHECKING_BGN try {
 #define TP_CHECK(condition) if(!condition){throw Tp::AssertException{.msg = #condition}; }

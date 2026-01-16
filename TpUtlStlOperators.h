@@ -4,6 +4,9 @@ namespace Tp
 {
     template<typename T>
     concept CStdString = requires (T x){x.substr(0);};
+
+    template<typename T>
+    concept COptionalContainer = !CStdString<T> && requires (T x){ x.value(); x.has_value(); };
  
     template<typename T>
     concept CIterableContainer = !CStdString<T> && requires (T x){x.begin();};
@@ -22,6 +25,17 @@ namespace Tp
     
     template <typename T>
     concept CStringStreamConvertible = requires(std::ostream os, T value) {{ os << value };};
+    
+    template<typename T> requires CIterableContainer<T>
+    T::value_type sum(const T & v1)
+    {
+        typename T::value_type ret = {};
+        for(const auto & v2 : v1)
+        {
+            ret += v2;
+        }
+        return ret;
+    }
     
     template<typename T> requires CInsertContainer<T>
     void append(T & v1,const typename T::value_type & v2)
@@ -42,6 +56,38 @@ namespace Tp
         {
             append(v1,v3);
         }
+    }
+    
+    template<typename U, typename V> requires CIterableContainer<U>
+    void merge(U & v1,const V & v2)
+    {
+        if constexpr(CIterableContainer<V>) for(const auto & v3 : v2)
+        {
+            append(v1,v3);
+        }
+        else
+        {
+            append(v1,v2);
+        }
+    }
+    
+    template<typename U, typename V> requires (!CIterableContainer<U>)
+    void merge(const U & v1,V & v2)
+    {
+        if constexpr(CIterableContainer<V>)
+        {
+            merge(v2,v1);
+        }
+        else
+        {
+            static_assert(false,"Merging non-containers is not allowed.");
+        }
+    }
+
+    template<typename T> requires CInsertContainer<T>    
+    auto first(T & container)
+    {
+        return *container.begin();
     }
     
     template<typename T> requires CInsertContainer<T>
@@ -92,7 +138,7 @@ template<typename U, typename V> requires Tp::CIterableContainer<U> || Tp::CIter
 U operator+(const U & v1, const V & v2)
 {
     auto v3 = v1;
-    Tp::append(v3,v2);
+    Tp::merge(v3,v2);
     return v3;
 }
 
@@ -100,7 +146,7 @@ U operator+(const U & v1, const V & v2)
 template<typename T> requires Tp::CIterableContainer<T>
 void operator+=(T & v1, const typename T::value_type & v2)
 {
-    Tp::append(v1,v2);
+    Tp::merge(v1,v2);
 }
 
 template<typename U, typename V> requires Tp::CIterableContainer<U> && Tp::CIterableContainer<V>

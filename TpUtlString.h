@@ -208,11 +208,20 @@ namespace Tp
         }
     }
     
+    template<SerializeToJson s2j,typename T>
+    std::string toJson(const T & v1)
+    {
+        std::string ret;
+        constexpr auto st = Dt::SerializeState{.format=false,.descriptor=s2j};
+        toJsonImpl<st,T>(v1,ret);
+        return ret;
+    }
+    
     template<typename T>
     std::string toJson(const T & v1)
     {
         std::string ret;
-        constexpr auto st = Dt::SerializeState{.format=true,.descriptor={}};
+        constexpr auto st = Dt::SerializeState{.format=false,.descriptor={}};
         toJsonImpl<st,T>(v1,ret);
         return ret;
     }
