@@ -1,5 +1,13 @@
 #pragma once
 
+#include <string>
+#include <fstream>
+#include <map>
+#include <set>
+#include <format>
+
+#include "TpUtlString.h"
+
 namespace Tp
 {
     namespace Filesystem

@@ -1,9 +1,42 @@
 #pragma once
 
+#include <type_traits>
+#include <ostream>
+
 #define TEMPLATE_MEMBER(x,y) x::template y
 
 namespace Tp
 {
+    template<typename T>
+    using BaseType = typename std::remove_pointer< std::remove_cvref_t<T> >::type;
+
+    template<typename U, typename V>
+    concept CSameBaseType = std::is_same_v<BaseType<U>,BaseType<V>>;
+    
+    template<typename T>
+    concept CStdString = requires (T x){x.substr(0);};
+
+    template<typename T>
+    concept COptionalContainer = !CStdString<T> && requires (T x){ x.value(); x.has_value(); };
+ 
+    template<typename T>
+    concept CIterableContainer = !CStdString<T> && requires (T x){x.begin();};
+   
+    template<typename T>
+    concept CInsertContainer =  CIterableContainer<T> && requires (T x, typename T::value_type v){x.insert(v);};
+
+    template<typename T>
+    concept CPushbackContainer =  CIterableContainer<T> && requires (T x, typename T::value_type v){x.push_back(v);};
+
+    template<typename T>
+    concept CMapContainer = CIterableContainer<T> && requires (T x){ typename T::mapped_type; };
+
+    template<typename T>
+    concept CListContainer = CIterableContainer<T> && !CMapContainer<T> && requires (T x){ typename T::value_type; };
+    
+    template <typename T>
+    concept CStringStreamConvertible = requires(std::ostream os, T value) {{ os << value };};
+    
     namespace MetaTypes
     {
         namespace Dt

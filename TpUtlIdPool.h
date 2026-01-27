@@ -1,5 +1,8 @@
 #pragma once
 
+#include <stddef.h>
+#include <set>
+
 namespace Tp
 {
     class IdPool

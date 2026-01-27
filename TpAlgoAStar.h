@@ -1,6 +1,5 @@
 #pragma once
 
-
 #define ENABLE_ASTAR_DEBUG 0
 #if ENABLE_ASTAR_DEBUG
 #define ASTAR_DEBUG(...) __VA_ARGS__
@@ -12,46 +11,55 @@ namespace Tp
 {
 
 
-    ASTAR_DEBUG(
-        struct AStarTestVector2 { double x=0.0; double y=0.0; };
-        inline void astarDebugFunction()
-        {
-            Vec<AStarTestVector2> astar_dbg_points = {
-                {0,0}, {1,0}, {2,0},
-                            {2,1},
-                {0,2}, {1,2}, {2,2}, {3,2}, {4,2},
-                            {2,3},        {4,3},
-                            {2,4}, {3,4}, {4,4}
-            };
-
-            auto LAdjacency = [](AStarTestVector2 node1, AStarTestVector2 node2){
-                std::cout << Tp::areEqual(node1.distance_to(node2),1.0) << std::endl;
-                return Tp::areEqual(node1.distance_to(node2),1.0);
-            };
-
-            auto LHeuristic = [](AStarTestVector2 node1, AStarTestVector2 node2){ 
-                return node1.distance_to(node2);
-            };
-
-            StaticAStar astar(points,LAdjacency,LHeuristic);
-                auto rslt = astar.findPath({1,0},{4,4});
-                std::cout << Tp::toJson(rslt) << std::endl;
-        }
-    )
+//    ASTAR_DEBUG(
+//        struct AStarTestVector2 { double x=0.0; double y=0.0; };
+//        inline void astarDebugFunction()
+//        {
+//            std::vector<AStarTestVector2> astar_dbg_points = {
+//                {0,0}, {1,0}, {2,0},
+//                              {2,1},
+//                {0,2}, {1,2}, {2,2}, {3,2}, {4,2},
+//                              {2,3},        {4,3},
+//                              {2,4}, {3,4}, {4,4}
+//            };
+//
+//            auto LAdjacency = [](AStarTestVector2 node1, AStarTestVector2 node2){
+//                std::cout << Tp::areEqual(node1.distance_to(node2),1.0) << std::endl;
+//                return Tp::areEqual(node1.distance_to(node2),1.0);
+//            };
+//
+//            auto LHeuristic = [](AStarTestVector2 node1, AStarTestVector2 node2){ 
+//                return node1.distance_to(node2);
+//            };
+//
+//            DynamicAStar astar(points,LAdjacency,LHeuristic);
+//                auto rslt = astar.findPath({1,0},{4,4});
+//                std::cout << Tp::toJson(rslt) << std::endl;
+//        }
+//    )
 
     template<typename NODE_LIST_T,
             typename ADJACENCY_FNC_T, 
             typename HEURISTIC_FNC_T>
-    class StaticAStar {
+    class DynamicAStar {
     public:
         using TNode = typename NODE_LIST_T::value_type;
         using TDistance = std::invoke_result_t<HEURISTIC_FNC_T,TNode,TNode>;
         HEURISTIC_FNC_T _distanceFnc;
-        StaticAStar(const NODE_LIST_T & nodes, ADJACENCY_FNC_T adjacencyFnc, HEURISTIC_FNC_T heuristicFnc) : _distanceFnc(heuristicFnc)
+        DynamicAStar(){}
+        DynamicAStar(const NODE_LIST_T & nodes, ADJACENCY_FNC_T adjacencyFnc, HEURISTIC_FNC_T heuristicFnc) : _distanceFnc(heuristicFnc)
         {
-            for(const auto & [id,node] : nodes | Tp::enumerate)
+            initialize(nodes,adjacencyFnc,heuristicFnc);
+        }
+        
+        void initialize(const NODE_LIST_T & nodes, ADJACENCY_FNC_T adjacencyFnc, HEURISTIC_FNC_T heuristicFnc)
+        {
+            _distanceFnc = heuristicFnc;
+            std::size_t id=0;
+            for(const auto & node : nodes)
             {
                 _nodesById[id] = node;
+                id++;
             }
 
             for(const auto & [a,node1] : _nodesById)
@@ -80,8 +88,8 @@ namespace Tp
         
         struct _SearchNode
         {
-            u64 endPoint;
-            Vec<u64> path;
+            std::uint64_t endPoint;
+            std::vector<std::uint64_t> path;
             TDistance f = {};
             TDistance g = {};
             TDistance h = {};
@@ -92,12 +100,12 @@ namespace Tp
             }
         };
         
-        Vec<TNode> findPath(const TNode & bgnNode,const TNode & endNode) const
+        std::vector<TNode> findPath(const TNode & bgnNode,const TNode & endNode) const
         {
             try
             {
-                BSet<u64> expanded;
-                BSet<_SearchNode> openList;
+                std::set<std::uint64_t> expanded;
+                std::set<_SearchNode> openList;
                 
                 const auto bgnId = _getNodeIndex(bgnNode);
                 const auto endId = _getNodeIndex(endNode);     
@@ -144,7 +152,7 @@ namespace Tp
                         openList.insert(
                             _SearchNode{
                                 .endPoint=nxtId,
-                                .path=Vec<u64>{} + currSN.endPoint + currSN.path,
+                                .path=std::vector<std::uint64_t>{} + currSN.endPoint + currSN.path,
                                 .f = dist_C_N + dist_N_E,
                                 .g = dist_C_N,
                                 .h = dist_N_E
@@ -162,8 +170,7 @@ namespace Tp
             return {};
         }
 
-    private:
-        u64 _getNodeIndex(const TNode & node) const
+        std::uint64_t _getNodeIndex(const TNode & node) const
         {
             for(const auto & [id,containerNode] : _nodesById)
             {
@@ -175,13 +182,13 @@ namespace Tp
             throw std::out_of_range("Could not find AStar node");
         }
         
-        const TNode & _getNodeByIndex(const u64 index) const
+        const TNode & _getNodeByIndex(const std::uint64_t index) const
         {
             return _nodesById.at(index);
         }
         
-        HMap<u64,TNode> _nodesById;
-        HMap<u64,Vec<u64>> _topology;
+        std::unordered_map<std::uint64_t,TNode> _nodesById;
+        std::unordered_map<std::uint64_t,std::vector<std::uint64_t>> _topology;
     };
 
 

@@ -1,5 +1,9 @@
 #pragma once
 
+#include <stddef.h>
+#include <vector>
+#include <algorithm>
+
 namespace Tp
 {
     template<class T>

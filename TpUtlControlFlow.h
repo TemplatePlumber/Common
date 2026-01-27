@@ -1,5 +1,12 @@
 #pragma once
 
+#include <iostream>
+#include <ranges>
+
+#include "TpUtlMetaTemplates.h"
+#include "TpUtlStlOperators.h"
+#include "TpUtlCommon.h"
+
 namespace Tp
 {
     /*
@@ -69,6 +76,39 @@ namespace Tp
     struct Pass{};
     template<typename T> void PassIf(const T & condition) { if(condition) { throw Pass{}; } };
     template<typename T> T * PassIfNull(T * ptr) { if(ptr == nullptr) { throw Pass{}; } return ptr; };
+
+    template<typename T, typename FNC_T> requires CIterableContainer<T>
+    Opt<typename T::value_type> minimize(const T & v1, FNC_T fnc)
+    {
+        using TValueType = typename T::value_type;
+        using TMinValue = std::invoke_result_t<FNC_T,typename T::value_type>;
+        if(v1.empty()){ return Pending; }
+        
+        Opt<TValueType> ret = Pending;
+        TMinValue least;
+        
+        for(const auto & v2 : v1)
+        {
+            try
+            {
+                auto val = fnc(v2);
+                if(ret == Pending || val < least)
+                {
+                    least = val;
+                    ret = v2;
+                }
+            }
+            catch(Pass pass){}
+        }
+        
+        return ret;
+    }
+    
+    template<typename T>
+    auto enumerate(T & value)
+    {
+        return std::views::zip(std::views::iota(0), value);
+    }
 
     template<template <typename> typename CONTAINER_T, typename VALUE_T, typename FNC_T>
     auto transform(const CONTAINER_T<VALUE_T> & container, FNC_T function)
@@ -179,6 +219,7 @@ namespace Tp
     TP_DECLARE_TRANSFORMER_1(Except,except);
     TP_DECLARE_TRANSFORMER_1(Filter,filter);
     TP_DECLARE_TRANSFORMER_0(YieldFirstOrPass,yieldFirstOrPass);
+    TP_DECLARE_TRANSFORMER_0(Enumerate,enumerate);
     
     
     template<typename TRANSFORMER_T,typename CONTAINER_T> requires std::derived_from<TRANSFORMER_T,Transformer>

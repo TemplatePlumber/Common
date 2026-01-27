@@ -1,5 +1,8 @@
 #pragma once
 
+#include "TpUtlControlFlow.h"
+#include "TpUtlReflection.h"
+
 namespace Tp
 {
     enum class JsonFormatMode
@@ -20,6 +23,9 @@ namespace Tp
         const bool ptr2id = true;
         const JsonFormatMode formatMode = JsonFormatMode::DEFAULT; 
     };
+    
+    template<typename RET_T,typename T>
+    RET_T convert(const T & value);
     
     template<typename T>
     std::string toString(const T & value);
