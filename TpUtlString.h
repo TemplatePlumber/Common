@@ -3,6 +3,9 @@
 #include "TpUtlControlFlow.h"
 #include "TpUtlReflection.h"
 
+#include <sstream>
+#include <type_traits>
+
 namespace Tp
 {
     enum class JsonFormatMode

@@ -12,19 +12,20 @@ set(CMAKE_CXX_MODULE_STD OFF)
 
 #file(GLOB SOURCES "*.cpp")
 
+#del /f .cache; del /f build; cmake -G Ninja -B build; cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON; cmake --build build
+
 add_executable(demo)
 target_compile_options(demo PRIVATE -stdlib=libc++)
 target_link_options(demo PRIVATE -stdlib=libc++)
 target_sources(demo
     PUBLIC
     TpUtlCommon.cpp
+    TpUtlIdPool.cpp
+    TpUtlLogging.cpp
 )
 
-#target_sources(demo
-#  PUBLIC
-#    FILE_SET all_my_modules TYPE CXX_MODULES FILES
-#    TpAlgoAStar.cpp
-#    TpUtlTypeTemplates.cpp
-#    TpUtlTransforms.cpp
-#    TpUtlUnsortedSet.cpp
-#)
+target_sources(demo
+  PUBLIC
+    FILE_SET all_my_modules TYPE CXX_MODULES FILES
+    TpUtlLogging.cppm
+)

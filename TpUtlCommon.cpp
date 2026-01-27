@@ -3,11 +3,8 @@
 #include <iostream>
 #include <tchar.h>
 
-#include "TpUtlMetaTemplates.h"
 #include "TpUtlControlFlow.h"
-#include "TpUtlStlOperators.h"
 #include "TpUtlReflection.h"
-#include "TpUtlCommon.h"
 
 
 // Metadata struct used to mark up class members in reflection.

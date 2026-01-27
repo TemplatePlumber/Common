@@ -5,3 +5,5 @@ bin
 *.code-workspace
 *.o
 *.d
+build/
+.cache/

@@ -2,7 +2,6 @@
 
 #include <stddef.h>
 #include <string>
-#include <type_traits>
 #include <iostream>
 #include <vector>
 #include <set>
@@ -10,21 +9,10 @@
 #include <map>
 #include <unordered_map>
 #include <assert.h>
-#include <ranges>
-#include <fstream>
 #include <cstdint>
-#include <sstream>
-#include <random>
-#include <limits>
 #include <cstdlib>
 #include <ctime>
-#include <filesystem>
-#include <stack>
 #include <optional>
-#include <cmath>
-#include <iomanip>
-#include <algorithm>
-#include <queue>
 
 namespace Tp
 {
@@ -61,8 +49,3 @@ template<typename U, typename V> using HMap = std::unordered_map<U,V>;
 template<typename T> using Opt = std::optional<T>;
 
 #define CONTINUE_IF(x) if(x) { continue; };
-
-//#include "TpUtlMetaTemplates.h"
-//#include "TpUtlControlFlow.h"
-//#include "TpUtlPreprocessor.h"
-
