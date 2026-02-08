@@ -55,6 +55,18 @@ namespace Tp
         template <typename T1, typename T2>
         concept CHaveSameTemplate = HaveSameTemplate<T1, T2>::value;
         
+        // 1. Primary template (default: false)
+        template <template <typename...> class TEMPLATE, typename T>
+        struct IsInstanceOfTemplate : std::false_type {};
+
+        // 2. Partial specialization (match: true)
+        template <template <typename...> class TEMPLATE, typename... Args>
+        struct IsInstanceOfTemplate<TEMPLATE, TEMPLATE<Args...>> : std::true_type {};
+
+        // Helper variable template (C++17)
+        template <template <typename...> class TEMPLATE, typename T>
+        concept CIsInstanceOfTemplate = IsInstanceOfTemplate<TEMPLATE, BaseType<T>>::value;
+
         
         template<template<typename ... VTs> typename TEMPLATE_T,typename ... ARG_Ts>
         class Template
@@ -62,6 +74,7 @@ namespace Tp
         public:
             template<typename ... SUBSTITUTED_Ts>
             using Substitute = TEMPLATE_T<SUBSTITUTED_Ts ...>;
+            
         };
         
         template<typename T>

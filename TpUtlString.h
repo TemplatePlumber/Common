@@ -8,6 +8,12 @@
 
 namespace Tp
 {
+    namespace TpUtlString
+    {
+        template <typename T>
+        concept CStringStreamConvertible = requires(std::ostream os, T value) {{ os << value };};
+    }
+    
     enum class JsonFormatMode
     {
         DEFAULT,                     // A newline will be printed after every comma and opening brace.

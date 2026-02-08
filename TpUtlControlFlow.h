@@ -4,6 +4,7 @@
 
 #include "TpUtlStlOperators.h"
 #include "TpUtlCommon.h"
+#include "TpUtlPreprocessor.h"
 
 namespace Tp
 {
@@ -80,9 +81,9 @@ namespace Tp
     {
         using TValueType = typename T::value_type;
         using TMinValue = std::invoke_result_t<FNC_T,typename T::value_type>;
-        if(v1.empty()){ return Pending; }
+        if(v1.empty()){ return Undefined; }
         
-        Opt<TValueType> ret = Pending;
+        Opt<TValueType> ret = Undefined;
         TMinValue least;
         
         for(const auto & v2 : v1)
@@ -90,7 +91,7 @@ namespace Tp
             try
             {
                 auto val = fnc(v2);
-                if(ret == Pending || val < least)
+                if(ret == Undefined || val < least)
                 {
                     least = val;
                     ret = v2;
@@ -103,7 +104,7 @@ namespace Tp
     }
     
     template<typename T>
-    auto enumerate(T & value)
+    auto enumerateFnc(T & value)
     {
         return std::views::zip(std::views::iota(0), value);
     }
@@ -140,7 +141,7 @@ namespace Tp
             Opt<CONTAINER_T> ret;
             if(!function(container))
             {
-                ret = Tp::Pending;
+                ret = Tp::Undefined;
             }
             else
             {
@@ -150,18 +151,6 @@ namespace Tp
         }
     }
     
-    //template<typename T> auto yieldFirstOrPass(const T & value);
-    
-    //template<typename CONTAINER_T> requires CIterableContainer<CONTAINER_T>
-    //typename CONTAINER_T::value_type yieldFirstOrPass(const CONTAINER_T & value)
-    //{
-    //    if(!value.empty())
-    //    {
-    //        auto ret = *value.begin();
-    //        return ret;
-    //    }
-    //    throw Pass{};
-    //}
     
     template<typename T>
     auto yieldFirstOrPass(const Opt<T> & value)
@@ -191,15 +180,15 @@ namespace Tp
     
     struct Transformer{};
 
-    #define TP_DECLARE_TRANSFORMER_0(NAME,FUNCTION) \
-        template<typename T> \
+    #define TP_DECLARE_TRANSFORMER_0(NAME,INSTANCE,FUNCTION) \
         struct NAME : public Transformer \
         { \
-            constexpr NAME(T v1) {} \
+            constexpr NAME() {} \
             \
             template<typename ... Ts> \
             constexpr auto activate(Ts ... args) const { return FUNCTION(args...); } \
-        };
+        };\
+        inline constexpr const NAME INSTANCE;
     
     #define TP_DECLARE_TRANSFORMER_1(NAME,FUNCTION) \
         template<typename T> \
@@ -216,9 +205,8 @@ namespace Tp
     TP_DECLARE_TRANSFORMER_1(Transform,transform);
     TP_DECLARE_TRANSFORMER_1(Except,except);
     TP_DECLARE_TRANSFORMER_1(Filter,filter);
-    TP_DECLARE_TRANSFORMER_0(YieldFirstOrPass,yieldFirstOrPass);
-    TP_DECLARE_TRANSFORMER_0(Enumerate,enumerate);
-    
+//    TP_DECLARE_TRANSFORMER_0(Enumerate,enumerate,enumerateFnc);
+    inline auto & enumerate = std::views::enumerate;
     
     template<typename TRANSFORMER_T,typename CONTAINER_T> requires std::derived_from<TRANSFORMER_T,Transformer>
     constexpr auto operator|(const CONTAINER_T & container, TRANSFORMER_T transformer)
@@ -264,6 +252,7 @@ namespace Tp
 
 #define TP_RETURN_IF(CONDITION,...) if(CONDITION){ return __VA_ARGS__; }
 #define TP_ERR_RETURN_IF(CONDITION,...) if(CONDITION){ std::cout << "Condition failed: " #CONDITION << std::endl; return __VA_ARGS__; }
+#define TP_ERR_IF(CONDITION) if(CONDITION){ std::cout << "Condition failed: " #CONDITION << std::endl; }
 #define TP_LOG(FMT,...)
 #define TP_ERROR_CHECKING_BGN try {
 #define TP_CHECK(condition) if(!condition){throw Tp::AssertException{.msg = #condition}; }

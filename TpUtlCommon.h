@@ -19,7 +19,7 @@ namespace Tp
     using std::cout;
     using std::endl;
     
-    inline constexpr auto & Pending = std::nullopt;
+    inline constexpr auto & Undefined = std::nullopt;
     
     template<typename ... Ts>
     auto makeTuple(Ts && ... values) { return std::make_tuple(std::forward<Ts>(values) ...); };

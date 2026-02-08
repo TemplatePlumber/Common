@@ -2,10 +2,12 @@
 #include <dbghelp.h>
 #include <iostream>
 #include <tchar.h>
+#include <ostream>
+#include <iostream>
+#include <fstream>
 
 #include "TpUtlControlFlow.h"
 #include "TpUtlReflection.h"
-
 
 // Metadata struct used to mark up class members in reflection.
 // PrintInfo would represent the use case of no-code generic object logging.
@@ -18,17 +20,22 @@ struct PrintInfo
 // SerializeInfo would represent the use case of no-code generic object serialization.
 struct SerializeInfo{};
 
+template<typename T>
+struct MetaTypeInfo{ using RelatedType = T; };
+
 // Example of a class with reflection enabled
 struct MyStruct
 {
     int myIntMember = 123;
     char myCharMember = 'a';
     std::string myStringMember = "abc";
+    bool myBoolMember = true;
      
     TP_ADD_DESCRIPTOR(myIntMember, SerializeInfo{});
     TP_ADD_DESCRIPTOR(myIntMember, PrintInfo{});
     TP_ADD_DESCRIPTOR(myStringMember, SerializeInfo{});
     TP_ADD_DESCRIPTOR(myCharMember, PrintInfo{.castToInteger = true});
+    TP_ADD_DESCRIPTOR(myBoolMember, MetaTypeInfo<char *>{});
 };
 
 int main()
@@ -91,5 +98,13 @@ int main()
     /*
         Output:
             myIntMember is both printable and serializable
-    */    
+    */
+    
+
+    TP_FOR_EACH_TEMPLATE_DESCRIPTOR(MyStruct,MetaTypeInfo,metaTypeDescriptor)
+    {
+        using RT = decltype(metaTypeDescriptor.user)::RelatedType;
+        std::cout << typeid(RT).name() << std::endl;
+    }
+    TP_DONE
 }

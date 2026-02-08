@@ -15,9 +15,10 @@
 
 
 
+#define TP_PP_DT_SECRET_CAT_IMPL(A,B) A##B
+#define TP_PP_DT_SECRET_CAT(A,B) TP_PP_DT_SECRET_CAT_IMPL(A,B)
 
-
-#define TP_PP_DT_CAT_2(a,b)     a##b
+#define TP_PP_DT_CAT_2(A,B)     A##B
 #define TP_PP_CAT_0()
 #define TP_PP_CAT_1(A)       A
 #define TP_PP_CAT_2(A,B)     TP_PP_DT_CAT_2(A,B)
@@ -28,7 +29,7 @@
 #define TP_PP_CAT_7(A,...)   TP_PP_CAT_2(A,TP_PP_CAT_6(__VA_ARGS__))
 #define TP_PP_CAT_8(A,...)   TP_PP_CAT_2(A,TP_PP_CAT_7(__VA_ARGS__))
 
-#define TP_PP_DT_CAT(...) TP_PP_CAT_2(TP_PP_CAT_, TP_PP_COUNT(__VA_ARGS__) )(__VA_ARGS__)
+#define TP_PP_DT_CAT(...) TP_PP_DT_SECRET_CAT(TP_PP_CAT_, TP_PP_COUNT(__VA_ARGS__) )(__VA_ARGS__)
 #define TP_PP_CAT(...) TP_PP_DT_CAT(__VA_ARGS__)
 
 
