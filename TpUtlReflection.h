@@ -143,6 +143,24 @@ namespace Tp
         }
         
         template<typename HOLDER_T, template<typename ...> typename DESCRIPTOR_T, typename LAMBDA_T>
+        void forEachDescriptor(LAMBDA_T fnc)
+        {
+            if constexpr( requires { ::Tp::Dt::CountPartialSpecializations<struct RSVD_RESULT_IDENTIFIER, TEMPLATE_MEMBER(HOLDER_T,RSVD_DESCRIPTOR_INFO_T)>::value; } )
+            {
+                constexpr auto numDescriptors = getDescriptorCount<HOLDER_T>();
+                
+                forEachInRange<0,numDescriptors>([&]<auto INDEX>(){
+                    using Head_t = DescriptorHead_t<HOLDER_T,INDEX>;
+                    constexpr const auto & descriptor = Head_t::descriptor;
+                    if constexpr(MetaTypes::CIsInstanceOfTemplate<DESCRIPTOR_T,typename Head_t::UserDescriptor_t>)
+                    {
+                        fnc.template operator()<descriptor>();
+                    }
+                });
+            }
+        }
+        
+        template<typename HOLDER_T, template<typename ...> typename DESCRIPTOR_T, typename LAMBDA_T>
         void forEachTemplateDescriptor(LAMBDA_T fnc)
         {
             if constexpr( requires { ::Tp::Dt::CountPartialSpecializations<struct RSVD_RESULT_IDENTIFIER, TEMPLATE_MEMBER(HOLDER_T,RSVD_DESCRIPTOR_INFO_T)>::value; } )
@@ -152,7 +170,6 @@ namespace Tp
                 forEachInRange<0,numDescriptors>([&]<auto INDEX>(){
                     using Head_t = DescriptorHead_t<HOLDER_T,INDEX>;
                     constexpr const auto & descriptor = Head_t::descriptor;
-                    std::cout << descriptor.common.memberName << MetaTypes::CIsInstanceOfTemplate<DESCRIPTOR_T,typename Head_t::UserDescriptor_t> << std::endl;
                     if constexpr(MetaTypes::CIsInstanceOfTemplate<DESCRIPTOR_T,typename Head_t::UserDescriptor_t>)
                     {
                         fnc.template operator()<descriptor>();
@@ -162,13 +179,6 @@ namespace Tp
         }
     }
     
-//#if defined(__clang__)
-//#else
-//#if defined(__GNUC__)
-//    constexpr auto enumerate = std::views::enumerate;
-//    
-//#endif
-//#endif
     
     template<typename T> 
     auto abs(const T & v1)
@@ -198,10 +208,6 @@ namespace Tp
 
 #define TP_FOR_EACH_DESCRIPTOR(HOLDER_T,DESCRIPTOR_T,DESCRIPTOR_ALIAS,...) \
     ::Tp::Reflect::forEachDescriptor<HOLDER_T,DESCRIPTOR_T>([&]<auto DESCRIPTOR_ALIAS>()
-#define TP_DONE );
-
-#define TP_FOR_EACH_TEMPLATE_DESCRIPTOR(HOLDER_T,DESCRIPTOR_T,DESCRIPTOR_ALIAS,...) \
-    ::Tp::Reflect::forEachTemplateDescriptor<HOLDER_T,DESCRIPTOR_T>([&]<auto DESCRIPTOR_ALIAS>()
 #define TP_DONE );
 
 

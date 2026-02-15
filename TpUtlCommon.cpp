@@ -21,7 +21,7 @@ struct PrintInfo
 struct SerializeInfo{};
 
 template<typename T>
-struct MetaTypeInfo{ using RelatedType = T; };
+struct MetaTypeInfo{ using RelatedType = T; const char * relatedTypeName; };
 
 // Example of a class with reflection enabled
 struct MyStruct
@@ -35,7 +35,9 @@ struct MyStruct
     TP_ADD_DESCRIPTOR(myIntMember, PrintInfo{});
     TP_ADD_DESCRIPTOR(myStringMember, SerializeInfo{});
     TP_ADD_DESCRIPTOR(myCharMember, PrintInfo{.castToInteger = true});
-    TP_ADD_DESCRIPTOR(myBoolMember, MetaTypeInfo<char *>{});
+
+    TP_ADD_DESCRIPTOR(myCharMember, MetaTypeInfo<bool>{.relatedTypeName = "bool"});
+    TP_ADD_DESCRIPTOR(myBoolMember, MetaTypeInfo<uint8_t>{.relatedTypeName = "uint8_t"});
 };
 
 int main()
@@ -65,6 +67,8 @@ int main()
             myIntMember=123
             myStringMember=abc
             myCharMember=a
+            myCharMember=a
+            myBoolMember=1
     */
     
 
@@ -101,10 +105,16 @@ int main()
     */
     
 
-    TP_FOR_EACH_TEMPLATE_DESCRIPTOR(MyStruct,MetaTypeInfo,metaTypeDescriptor)
+    TP_FOR_EACH_DESCRIPTOR(MyStruct,MetaTypeInfo,metaTypeDescriptor)
     {
         using RT = decltype(metaTypeDescriptor.user)::RelatedType;
-        std::cout << typeid(RT).name() << std::endl;
+        std::cout << metaTypeDescriptor.common.memberName << " has type member " 
+                  << metaTypeDescriptor.user.relatedTypeName << "(" << typeid(RT).name() << ")" << std::endl;
     }
     TP_DONE
+    /*
+        Output:
+            myCharMember has type member bool
+            myBoolMember has type member uint8_t
+    */
 }

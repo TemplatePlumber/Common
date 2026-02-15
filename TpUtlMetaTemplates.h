@@ -69,12 +69,28 @@ namespace Tp
 
         
         template<template<typename ... VTs> typename TEMPLATE_T,typename ... ARG_Ts>
-        class Template
+        struct Template
         {
         public:
             template<typename ... SUBSTITUTED_Ts>
             using Substitute = TEMPLATE_T<SUBSTITUTED_Ts ...>;
             
+        };
+        
+        template<typename HOLDER_T, typename MBR_T>
+        struct MemberPointerType
+        {
+            using Holder_t = HOLDER_T;
+            using Member_t = MBR_T;
+            MBR_T HOLDER_T::* pointer;
+        };
+        
+        template<auto PTR>
+        struct MemberPointer
+        {
+            using Info_t = decltype(MemberPointerType{.pointer=PTR});
+            using Holder_t = typename Info_t::Holder_t;
+            using Member_t = typename Info_t::Member_t;
         };
         
         template<typename T>
