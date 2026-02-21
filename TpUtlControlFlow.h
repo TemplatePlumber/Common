@@ -84,7 +84,7 @@ namespace Tp
         if(v1.empty()){ return Undefined; }
         
         Opt<TValueType> ret = Undefined;
-        TMinValue least;
+        TMinValue least = (TMinValue)-1;
         
         for(const auto & v2 : v1)
         {
@@ -131,7 +131,7 @@ namespace Tp
             {
                 if(!function(value))
                 {
-                    Tp:append(ret,value);
+                    append(ret,value);
                 }
             }
             return ret;

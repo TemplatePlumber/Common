@@ -100,10 +100,6 @@ namespace Tp
             return cfgTab;
         }();
         
-
-        auto LPutTab = [&](){
-            for(auto i=0;i<nextTab;i++){ret += "    ";}
-        };
         
         auto LPutComma = [&](){
             ret += ",";

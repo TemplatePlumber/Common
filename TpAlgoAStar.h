@@ -109,7 +109,6 @@ namespace Tp
                 
                 const auto bgnId = _getNodeIndex(bgnNode);
                 const auto endId = _getNodeIndex(endNode);     
-                auto node = 
                 openList.insert(
                     _SearchNode{
                         .endPoint=bgnId,

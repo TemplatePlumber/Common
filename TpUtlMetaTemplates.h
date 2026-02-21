@@ -77,6 +77,36 @@ namespace Tp
             
         };
         
+        template<typename RET_T,typename HOLDER_T,typename ... ARG_Ts>
+        struct FunctionPointerType
+        {
+            using Return_t = RET_T;
+            RET_T (*pointer)(ARG_Ts ...) ;
+        };  
+              
+        template<auto PTR>
+        struct FunctionPointer
+        {
+            using Info_t = decltype(FunctionPointerType{.pointer=PTR});
+            using Return_t = typename Info_t::Return_t;
+        };
+        
+        template<typename RET_T,typename HOLDER_T,typename ... ARG_Ts>
+        struct MethodPointerType
+        {
+            using Holder_t = HOLDER_T;
+            using Return_t = RET_T;
+            RET_T (HOLDER_T::*pointer)(ARG_Ts ...) ;
+        };  
+              
+        template<auto PTR>
+        struct MethodPointer
+        {
+            using Info_t = decltype(MethodPointerType{.pointer=PTR});
+            using Holder_t = typename Info_t::Holder_t;
+            using Return_t = typename Info_t::Return_t;
+        };
+        
         template<typename HOLDER_T, typename MBR_T>
         struct MemberPointerType
         {

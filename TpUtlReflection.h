@@ -107,7 +107,6 @@ namespace Tp
                 constexpr auto numDescriptors = getDescriptorCount<HOLDER_T>();
                 forEachInRange<0,numDescriptors>([&]<auto INDEX>(){
                     using Head_t = DescriptorHead_t<HOLDER_T,INDEX>;
-                    constexpr const auto & descriptor = Head_t::descriptor;
                     if constexpr(CSameBaseType<DESCRIPTOR_T,typename Head_t::UserDescriptor_t>)
                     {
                         ret++;
@@ -144,24 +143,6 @@ namespace Tp
         
         template<typename HOLDER_T, template<typename ...> typename DESCRIPTOR_T, typename LAMBDA_T>
         void forEachDescriptor(LAMBDA_T fnc)
-        {
-            if constexpr( requires { ::Tp::Dt::CountPartialSpecializations<struct RSVD_RESULT_IDENTIFIER, TEMPLATE_MEMBER(HOLDER_T,RSVD_DESCRIPTOR_INFO_T)>::value; } )
-            {
-                constexpr auto numDescriptors = getDescriptorCount<HOLDER_T>();
-                
-                forEachInRange<0,numDescriptors>([&]<auto INDEX>(){
-                    using Head_t = DescriptorHead_t<HOLDER_T,INDEX>;
-                    constexpr const auto & descriptor = Head_t::descriptor;
-                    if constexpr(MetaTypes::CIsInstanceOfTemplate<DESCRIPTOR_T,typename Head_t::UserDescriptor_t>)
-                    {
-                        fnc.template operator()<descriptor>();
-                    }
-                });
-            }
-        }
-        
-        template<typename HOLDER_T, template<typename ...> typename DESCRIPTOR_T, typename LAMBDA_T>
-        void forEachTemplateDescriptor(LAMBDA_T fnc)
         {
             if constexpr( requires { ::Tp::Dt::CountPartialSpecializations<struct RSVD_RESULT_IDENTIFIER, TEMPLATE_MEMBER(HOLDER_T,RSVD_DESCRIPTOR_INFO_T)>::value; } )
             {
