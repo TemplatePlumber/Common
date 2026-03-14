@@ -48,6 +48,14 @@ namespace Tp
         return ret;
     }
     
+    template<typename STR_T>
+    STR_T toLower(const STR_T & value)
+    {
+        str8 ret = value;
+        std::transform(ret.begin(), ret.end(), ret.begin(), [](unsigned char c){ return std::tolower(c); });
+        return ret;
+    }
+    
     namespace Dt
     {
         struct SerializeState
@@ -235,5 +243,11 @@ namespace Tp
         constexpr auto st = Dt::SerializeState{.format=false,.descriptor={}};
         toJsonImpl<st,T>(v1,ret);
         return ret;
+    }
+
+    template <typename ... Ts>
+    auto format(const std::format_string<Ts...> fmt,Ts && ... args)
+    {
+        return std::format(fmt,std::forward<Ts>(args) ...);
     }
 }

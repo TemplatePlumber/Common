@@ -14,5 +14,6 @@ namespace Tp
     public:
         size_t get();
         void put(size_t id);
+        bool unput(size_t id);
     };
 }

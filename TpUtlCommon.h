@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <optional>
+#include <memory>
 
 namespace Tp
 {
@@ -36,6 +37,12 @@ using ch8 = char;
 using u8 = uint8_t;
 using i8 = int8_t;
 using str8 = std::string;
+
+template<typename T>
+using SPtr = std::shared_ptr<T>;
+
+//template<typename T>
+//auto createShared(){return std::make_shared<T>();}
 
 template<size_t i,typename T> auto get(T && value) { return std::get<i>(std::forward(value)); };
 template<typename U, typename V> using Pair = std::pair<U,V>;

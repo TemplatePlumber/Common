@@ -31,7 +31,32 @@ namespace Tp
                 _highestAllocatedId--;
                 _returnedIds.erase(itr.base());
             }
+            else
+            {
+                break;
+            }
         }
         while(!_returnedIds.empty());
+    }
+    
+    bool IdPool::unput(size_t id)
+    {
+        if(id <= _highestAllocatedId)
+        {
+            auto itr = _returnedIds.find(id);
+            if(itr == _returnedIds.end())
+            {
+                return false;
+            }
+            
+            _returnedIds.erase(itr);
+        }
+        else while(id != _highestAllocatedId)
+        {
+            _returnedIds.insert(_highestAllocatedId);
+            _highestAllocatedId++;
+        }
+        
+        return true;
     }
 }
