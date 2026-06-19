@@ -7,6 +7,14 @@
 
 namespace Tp
 {
+    // Stands for 'template value wrapper'.
+    //   Templates are difficult to work with when mixing type and value parameters together.
+    //   Instead, convert value parameters to type parameters within template declarations.
+    template<auto V>
+    struct TVWrapper {
+        static constexpr const decltype(V) value = V;
+    };
+    
     template<typename T>
     using BaseType = typename std::remove_pointer< std::remove_cvref_t<T> >::type;
 
@@ -20,10 +28,16 @@ namespace Tp
     concept COptionalContainer = !CStdString<T> && requires (T x){ x.value(); x.has_value(); };
  
     template<typename T>
+    concept CValueTypeContainer = requires(T x){ typename T::value_type; };
+ 
+    template<typename T>
     concept CIterableContainer = !CStdString<T> && requires (T x){x.begin();};
    
     template<typename T>
     concept CInsertContainer =  CIterableContainer<T> && requires (T x, typename T::value_type v){x.insert(v);};
+
+    template<typename T>
+    concept CFindEraseContainer =  CIterableContainer<T> && CValueTypeContainer<T> && requires (T x, typename T::value_type v){x.erase(x.find(v));};
 
     template<typename T>
     concept CPushbackContainer =  CIterableContainer<T> && requires (T x, typename T::value_type v){x.push_back(v);};
@@ -34,8 +48,32 @@ namespace Tp
     template<typename T>
     concept CListContainer = CIterableContainer<T> && !CMapContainer<T> && requires (T x){ typename T::value_type; };
     
+    template<typename U, typename V>
+    concept CValueEraseContainer = requires(U u, V v){u.erase(v);};
+    
     template <typename T>
     concept CStringStreamConvertible = requires(std::ostream os, T value) {{ os << value };};
+    
+    template <typename T>
+    struct IsMethodPointer : std::false_type {};
+
+    template <typename ReturnType, typename ClassName, typename... Args>
+    struct IsMethodPointer<ReturnType (ClassName::*)(Args...)> : std::true_type {};
+
+    template <typename ReturnType, typename ClassName, typename... Args>
+    struct IsMethodPointer<ReturnType (ClassName::*)(Args...) const> : std::true_type {};
+
+    template <typename T>
+    concept CIsMethodPointer = IsMethodPointer<T>::value;
+    
+    template <typename T>
+    struct IsMemberPointer : std::false_type {};
+
+    template <typename HOLDER_T, typename MBR_T> requires (!std::is_function_v<MBR_T>)
+    struct IsMemberPointer<MBR_T HOLDER_T::*> : std::true_type {};
+
+    template <typename T>
+    concept CIsMemberPointer = IsMemberPointer<T>::value;
     
     namespace MetaTypes
     {
@@ -55,15 +93,12 @@ namespace Tp
         template <typename T1, typename T2>
         concept CHaveSameTemplate = HaveSameTemplate<T1, T2>::value;
         
-        // 1. Primary template (default: false)
         template <template <typename...> class TEMPLATE, typename T>
         struct IsInstanceOfTemplate : std::false_type {};
 
-        // 2. Partial specialization (match: true)
         template <template <typename...> class TEMPLATE, typename... Args>
         struct IsInstanceOfTemplate<TEMPLATE, TEMPLATE<Args...>> : std::true_type {};
 
-        // Helper variable template (C++17)
         template <template <typename...> class TEMPLATE, typename T>
         concept CIsInstanceOfTemplate = IsInstanceOfTemplate<TEMPLATE, BaseType<T>>::value;
 
@@ -105,6 +140,17 @@ namespace Tp
             using Info_t = decltype(MethodPointerType{.pointer=PTR});
             using Holder_t = typename Info_t::Holder_t;
             using Return_t = typename Info_t::Return_t;
+            using Pointer_t = decltype(Info_t::pointer);
+        };
+        
+        template<typename T>
+        struct MemberPointerType2;
+    
+        template<typename HOLDER_T, typename MBR_T>
+        struct MemberPointerType2<MBR_T HOLDER_T::*>
+        {
+            using Holder_t = HOLDER_T;
+            using Member_t = MBR_T;
         };
         
         template<typename HOLDER_T, typename MBR_T>

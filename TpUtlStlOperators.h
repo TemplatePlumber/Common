@@ -85,7 +85,7 @@ namespace Tp
         return false;
     }
     
-    template<typename T> requires CInsertContainer<T>
+    template<typename T> requires (CFindEraseContainer<T> && CValueTypeContainer<T>)
     void remove(T & v1,const typename T::value_type & v2)
     {
         auto itr = v1.find(v2);
@@ -95,7 +95,7 @@ namespace Tp
         }
     }
     
-    template<typename T> requires CPushbackContainer<T>
+    template<typename T> requires (!CFindEraseContainer<T> && CValueTypeContainer<T>)
     void remove(T & v1,const typename T::value_type & v2)
     {
         auto it = std::find(v1.begin(), v1.end(), v2);
@@ -104,12 +104,59 @@ namespace Tp
             v1.erase(it);
         }
     }
+
+    template<typename T,typename U> requires (!CFindEraseContainer<T> && !CValueTypeContainer<T> && CValueEraseContainer<T,U>)
+    void remove(T & v1,const U & v2)
+    {
+        for(auto & v3 : v1)
+        {
+            if(v3 == v2)
+            {
+                v1.erase(v3);
+                break;
+            }
+        }
+    }
+    
+    template<typename U, typename V> requires CIterableContainer<U>
+    void setDifference(U & v1,const V & v2)
+    {
+        if constexpr(CIterableContainer<V>) for(const auto & v3 : v2)
+        {
+            remove(v1,v3);
+        }
+        else
+        {
+            remove(v1,v2);
+        }
+    }
+    
+    template<typename U, typename V> requires (!CIterableContainer<U>)
+    void setDifference(const U & v1,V & v2)
+    {
+        if constexpr(CIterableContainer<V>)
+        {
+            setDifference(v2,v1);
+        }
+        else
+        {
+            static_assert(false,"setDifference on non-containers is not allowed.");
+        }
+    }
 }
 
-template<typename T> requires Tp::CIterableContainer<T>
-void operator-=(T & v1, const typename T::value_type & v2)
+template<typename U, typename V> requires Tp::CIterableContainer<U> || Tp::CIterableContainer<V>
+U operator-(const U & v1, const V & v2)
 {
-    Tp::remove(v1,v2);
+    auto v3 = v1;
+    Tp::setDifference(v3,v2);
+    return v3;
+}
+
+template<typename T,typename U> requires (Tp::CIterableContainer<T>)
+void operator-=(T & v1, const U & v2)
+{
+    Tp::setDifference(v1,v2);
 }
 
 template<typename U, typename V> requires Tp::CIterableContainer<U> || Tp::CIterableContainer<V>

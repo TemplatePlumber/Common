@@ -20,12 +20,24 @@ struct PrintInfo
 // SerializeInfo would represent the use case of no-code generic object serialization.
 struct SerializeInfo{};
 
+struct MethodInfo
+{
+    const char * printName;
+};
+
 template<typename T>
 struct MetaTypeInfo{ using RelatedType = T; const char * relatedTypeName; };
 
 // Example of a class with reflection enabled
 struct MyStruct
 {
+    void foo(){}
+    void bar(){}
+    
+    TP_ADD_METHOD_DESCRIPTOR(foo, MethodInfo{.printName = "Ping"});
+    TP_ADD_METHOD_DESCRIPTOR(bar, MethodInfo{.printName = "Pong"});
+    
+    
     int myIntMember = 123;
     char myCharMember = 'a';
     std::string myStringMember = "abc";
@@ -71,6 +83,21 @@ int main()
             myBoolMember=1
     */
     
+    /*
+        Iterate over each method descriptor.
+    */
+    TP_FOR_EACH_METHOD_DESCRIPTOR(MyStruct,MethodInfo,descriptor)
+    {
+        std::cout << descriptor.common.methodName 
+                  << "'s true name is "
+                  << descriptor.user.printName << std::endl;
+    }
+    TP_DONE
+    /*
+        Output:
+            foo's true name is Bar
+            bar's true name is SuperBar
+    */
 
     //Iterate over every class member marked with 'PrintInfo'.
     TP_FOR_EACH_DESCRIPTOR(MyStruct,PrintInfo,descriptor)

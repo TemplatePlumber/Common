@@ -121,6 +121,7 @@ namespace Tp
         return ret;
     }
 
+    //Filters on true
     template<typename CONTAINER_T, typename FNC_T> //requires CIterableContainer<CONTAINER_T>
     auto filter(const CONTAINER_T & container, FNC_T function)
     {
@@ -141,11 +142,11 @@ namespace Tp
             Opt<CONTAINER_T> ret;
             if(!function(container))
             {
-                ret = Tp::Undefined;
+                ret = container;
             }
             else
             {
-                ret = container;
+                ret = Tp::Undefined;
             }
             return ret;
         }

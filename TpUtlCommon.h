@@ -24,6 +24,35 @@ namespace Tp
     
     template<typename ... Ts>
     auto makeTuple(Ts && ... values) { return std::make_tuple(std::forward<Ts>(values) ...); };
+    
+    template<typename T> requires (std::is_integral_v<T>)
+    T pow(T base, T exp)
+    {
+        if (exp < 0) {
+            if (base == 1) { return 1; }
+            else if (base == -1)
+            {
+                if(exp % 2 == 0) 
+                { 
+                    return 1;
+                } 
+                else 
+                {
+                    return -1;
+                }
+            }
+            return 0; // Integer division truncates 1 / (base^exp) to 0
+        }
+        
+        T ret = 1;
+        while (exp > 0)
+        {
+            if (exp & 1) { ret *= base; }
+            base *= base;
+            exp >>= 1;
+        }
+        return ret;
+    }
 }
 
 enum class Cardinal8 {N,NW,W,SW,S,SE,E,NE};
@@ -56,3 +85,4 @@ template<typename U, typename V> using HMap = std::unordered_map<U,V>;
 template<typename T> using Opt = std::optional<T>;
 
 #define CONTINUE_IF(x) if(x) { continue; };
+#define INVALID_ID (u64)-1
