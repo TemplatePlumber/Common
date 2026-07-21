@@ -250,4 +250,13 @@ namespace Tp
     {
         return std::format(fmt,std::forward<Ts>(args) ...);
     }
+    
+    namespace String
+    {
+        bool endsWith(const std::string & str,const std::string & suffix);
+
+        std::vector<std::string> splitFields(const std::string & str,char delim);
+
+        std::string joinFields(const std::vector<std::string> & fields,char delim);
+    }
 }

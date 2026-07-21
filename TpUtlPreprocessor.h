@@ -15,11 +15,10 @@
                        N19,N18,N17,N16,N15,N14,N13,N12,N11,N10,\
                        N09,N08,N07,N06,N05,N04,N03,N02,N01,RET,...) RET
 
-#define TP_PP_COUNT(...) TP_PP_DT_COUNT(__VA_ARGS__,\
+#define TP_PP_COUNT(...) TP_PP_DT_COUNT(__VA_OPT__(__VA_ARGS__,)\
     29,28,27,26,25,24,23,22,21,20,\
     19,18,17,16,15,14,13,12,11,10,\
      9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
-
 
 
 #define TP_PP_DT_SECRET_CAT_IMPL(A,B) A##B
@@ -86,9 +85,9 @@
 
 
 
-#define TP_PP_DT_CALL_1(FNC,SEP,END,...) TP_PP_CAT_2(TP_PP_CALL_1_, TP_PP_COUNT(__VA_ARGS__) )(FNC,SEP,END,__VA_ARGS__)
-#define TP_PP_CALL_1(FNC,...) TP_PP_DT_CALL_1(FNC,TP_PP_WRAP(;),TP_PP_WRAP(;),__VA_ARGS__)
-#define TP_PP_CALL_EXT_1(FNC,SEP,END,...) TP_PP_DT_CALL_1(FNC,SEP,END,__VA_ARGS__)
+#define TP_PP_DT_CALL_1(FNC,SEP,END,...) TP_PP_CAT_2(TP_PP_CALL_1_, TP_PP_COUNT(__VA_ARGS__) )(FNC,SEP,END __VA_OPT__(,__VA_ARGS__))
+#define TP_PP_CALL_1(FNC,...) TP_PP_DT_CALL_1(FNC,TP_PP_WRAP(;),TP_PP_WRAP(;) __VA_OPT__(,__VA_ARGS__))
+#define TP_PP_CALL_EXT_1(FNC,SEP,END,...) TP_PP_DT_CALL_1(FNC,SEP,END __VA_OPT__(,__VA_ARGS__))
 
 
 

@@ -233,30 +233,7 @@ namespace Tp
     }
     
     
-    template<typename T> 
-    auto abs(const T & v1)
-    {
-        if constexpr (std::is_floating_point_v<T>)
-        {
-            return std::fabs(v1);
-        }
-        else
-        {
-            return std::abs(v1);
-        }
-    }
-    
-    template<typename U,typename V> requires (std::is_floating_point_v<Tp::BaseType<U>> || std::is_floating_point_v<Tp::BaseType<V>>)
-    bool areEqual(const U & v1, const V & v2, U epsilon = 0.0001)
-    {
-        return Tp::abs(v1 - v2) < epsilon;
-    }
-    
-    template<typename U,typename V> requires (!(std::is_floating_point_v<Tp::BaseType<U>> || std::is_floating_point_v<Tp::BaseType<V>>))
-    bool areEqual(const U & v1, const V & v2)
-    {
-        return v1 == v2;
-    }
+
 }
 
 #define TP_FOR_EACH_DESCRIPTOR(HOLDER_T,DESCRIPTOR_T,DESCRIPTOR_ALIAS,...) \
@@ -332,7 +309,7 @@ namespace Tp
             static constexpr std::string_view methodName = #MBR_NAME;                                \
                                                                                                      \
             template <typename HOLDER__T>                                                            \
-            static constexpr auto memberPointer = &HOLDER__T::MBR_NAME;                              \
+            static constexpr auto methodPointer = &HOLDER__T::MBR_NAME;                              \
         };                                                                                           \
         struct Descriptor_t                                                                          \
         {                                                                                            \

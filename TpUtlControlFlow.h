@@ -109,6 +109,20 @@ namespace Tp
         return std::views::zip(std::views::iota(0), value);
     }
 
+    template<typename CONTAINER_T, typename FNC_T>
+    auto transform(const CONTAINER_T & container, FNC_T function)
+    {
+        using IN_VALUE_T = Tp::BaseType<decltype(*container.begin())>;
+        using OUT_VALUE_T = std::invoke_result_t<decltype(function), IN_VALUE_T>;
+        std::vector<OUT_VALUE_T> ret;
+        for(const auto & value : container)
+        {
+            try{ Tp::append(ret,function(value)); } catch(const Pass & pass){}
+        }
+        
+        return ret;
+    }
+
     template<template <typename> typename CONTAINER_T, typename VALUE_T, typename FNC_T>
     auto transform(const CONTAINER_T<VALUE_T> & container, FNC_T function)
     {
@@ -118,8 +132,11 @@ namespace Tp
         {
             try{ Tp::append(ret,function(value)); } catch(const Pass & pass){}
         }
+        
         return ret;
     }
+    
+#define TP_TRANSFORM(FUNCTION) Tp::Transform([&](auto x){return FUNCTION(x);});
 
     //Filters on true
     template<typename CONTAINER_T, typename FNC_T> //requires CIterableContainer<CONTAINER_T>
@@ -256,7 +273,7 @@ namespace Tp
 #define TP_ERR_IF(CONDITION) if(CONDITION){ std::cout << "Condition failed: " #CONDITION << std::endl; }
 #define TP_LOG(FMT,...)
 #define TP_ERROR_CHECKING_BGN try {
-#define TP_CHECK(condition) if(!condition){throw Tp::AssertException{.msg = #condition}; }
+#define TP_CHECK(condition) if(!(condition)){throw Tp::AssertException{.msg = #condition}; }
 #define TP_ERROR_CHECKING_END \
     }\
     catch(const Tp::AssertException & exception) \

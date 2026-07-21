@@ -34,13 +34,13 @@ namespace Tp
     concept CIterableContainer = !CStdString<T> && requires (T x){x.begin();};
    
     template<typename T>
-    concept CInsertContainer =  CIterableContainer<T> && requires (T x, typename T::value_type v){x.insert(v);};
+    concept CInsertContainer =  CIterableContainer<T> && requires (Tp::BaseType<T> x, typename T::value_type v){x.insert(v);};
 
     template<typename T>
-    concept CFindEraseContainer =  CIterableContainer<T> && CValueTypeContainer<T> && requires (T x, typename T::value_type v){x.erase(x.find(v));};
+    concept CFindEraseContainer =  CIterableContainer<T> && CValueTypeContainer<T> && requires (Tp::BaseType<T> x, typename T::value_type v){x.erase(x.find(v));};
 
     template<typename T>
-    concept CPushbackContainer =  CIterableContainer<T> && requires (T x, typename T::value_type v){x.push_back(v);};
+    concept CPushbackContainer =  CIterableContainer<T> && requires (Tp::BaseType<T> x, typename T::value_type v){x.push_back(v);};
 
     template<typename T>
     concept CMapContainer = CIterableContainer<T> && requires (T x){ typename T::mapped_type; };
@@ -49,7 +49,7 @@ namespace Tp
     concept CListContainer = CIterableContainer<T> && !CMapContainer<T> && requires (T x){ typename T::value_type; };
     
     template<typename U, typename V>
-    concept CValueEraseContainer = requires(U u, V v){u.erase(v);};
+    concept CValueEraseContainer = requires(Tp::BaseType<U> u, V v){u.erase(v);};
     
     template <typename T>
     concept CStringStreamConvertible = requires(std::ostream os, T value) {{ os << value };};
