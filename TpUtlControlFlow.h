@@ -1,6 +1,9 @@
 #pragma once
 
 #include <ranges>
+#include <coroutine>
+#include <random>
+#include <chrono>
 
 #include "TpUtlStlOperators.h"
 #include "TpUtlCommon.h"
@@ -8,6 +11,50 @@
 
 namespace Tp
 {
+    /* For non-error exceptions */
+    struct Escape {};
+    
+    
+    /*
+        Type casting
+    */
+    template<typename TO,typename FROM>
+    struct ExplicitCast {};
+
+    template<template<typename> typename TO,template<typename> typename FROM,typename T>
+    TO<T> adapt(const FROM<T> & v1)
+    {
+        return ExplicitCast<TO<T>,FROM<T>>::exec(v1);
+    }
+    
+    template<typename TO,typename FROM>
+    TO adapt(const FROM & v1)
+    {
+        return ExplicitCast<TO,FROM>::exec(v1);
+    }
+    
+    // Keyword: Adapt
+    struct _Adapt{ _Adapt() = default; };
+    inline const _Adapt Adapt;
+
+    // Syntax: var | Adapt()
+    template<typename FROM_T>
+    struct To_Or_Adapt {
+        const FROM_T & _ref;
+        To_Or_Adapt(const FROM_T & ref):_ref(ref){}
+        
+        template<typename TO_T>
+        operator TO_T() const{
+            return Tp::adapt<TO_T,FROM_T>(_ref);
+        }
+    };
+
+    template<typename FROM_T>
+    To_Or_Adapt<FROM_T> operator|(const FROM_T & from, _Adapt adapt) {
+        return To_Or_Adapt<FROM_T>(from);
+    }
+
+    
     /*
         Unroll a for-loop over each template parameter.
     */
@@ -83,24 +130,28 @@ namespace Tp
         using TMinValue = std::invoke_result_t<FNC_T,typename T::value_type>;
         if(v1.empty()){ return Undefined; }
         
-        Opt<TValueType> ret = Undefined;
         TMinValue least = (TMinValue)-1;
+        const TValueType * leastPtr = nullptr;
         
         for(const auto & v2 : v1)
         {
             try
             {
                 auto val = fnc(v2);
-                if(ret == Undefined || val < least)
+                if(val < least)
                 {
                     least = val;
-                    ret = v2;
+                    leastPtr = &v2;
                 }
             }
             catch(Pass pass){}
         }
         
-        return ret;
+        if(leastPtr)
+        {
+            return *leastPtr;
+        }
+        return Undefined;
     }
     
     template<typename T>
@@ -167,6 +218,19 @@ namespace Tp
             }
             return ret;
         }
+    }
+    
+    template<typename CONTAINER_T>
+    auto shuffle(const CONTAINER_T & container, size_t seed=std::chrono::system_clock::now().time_since_epoch().count())
+    {
+        Vec<typename CONTAINER_T::value_type> ret;
+        Tp::merge(ret,container);
+        static std::random_device rd;
+        static std::mt19937 g(rd());
+        g.seed(seed);
+        
+        std::shuffle(ret.begin(), ret.end(), g);
+        return ret;
     }
     
     
@@ -266,6 +330,105 @@ namespace Tp
 
 
     struct AssertException{ const std::string & msg; };
+    
+    /*
+        Coroutine Objects
+    */
+    template<typename T>
+    struct DeferredTask {
+        struct promise_type {
+            int final_result = 0; 
+            DeferredTask get_return_object() { return DeferredTask{std::coroutine_handle<promise_type>::from_promise(*this)}; }
+            std::suspend_always initial_suspend() { return {}; }
+            std::suspend_always final_suspend() noexcept { return {}; }
+            void return_value(T value) {}
+            void unhandled_exception() { std::terminate(); }
+        };
+        
+        DeferredTask & operator=(DeferredTask && other) noexcept
+        {
+            if (this != &other) {
+                if (handle) handle.destroy();
+                handle = other.handle;
+                other.handle = nullptr;
+            }
+            return *this;
+        }
+
+        DeferredTask() = default;
+        DeferredTask(std::coroutine_handle<promise_type> h) : handle(h) {}
+        DeferredTask(DeferredTask && other) noexcept : handle(other.handle) { other.handle = nullptr; }
+        ~DeferredTask() { if (handle) { handle.destroy(); } } // Clean up memory
+        
+
+        std::coroutine_handle<promise_type> handle;
+        
+        // await_ready - Declare that DeferredTask is awaitable, to allow nested coroutines
+        bool await_ready()
+        {
+            std::cout << "READY" << std::endl;
+            // Nothing to await - resume parent coroutine immediately
+            if (!handle) { return true; }
+            
+            // Do not suspend the parent coroutine if the nested coroutine finishes
+            return handle.done();
+        } 
+        
+        // await_suspend - DeferredTask begins immediately if called inside of a coroutine.
+        void await_suspend(std::coroutine_handle<> caller_handle)
+        {
+            std::cout << "RESUME" << std::endl;
+            handle.resume(); 
+        }
+    };
+
+    template<>
+    struct DeferredTask<void> {
+        // 2. The nested promise_type required by the compiler
+        struct promise_type {
+            DeferredTask get_return_object() { return DeferredTask{std::coroutine_handle<promise_type>::from_promise(*this)}; }
+            std::suspend_always initial_suspend() { return {}; }
+            std::suspend_always final_suspend() noexcept { return {}; }
+            void return_void() {}
+            void unhandled_exception() { std::terminate(); }
+        };
+
+        DeferredTask & operator=(DeferredTask && other) noexcept
+        {
+            if (this != &other) {
+                if (handle) handle.destroy();
+                handle = other.handle;
+                other.handle = nullptr;
+            }
+            return *this;
+        }
+
+        DeferredTask() = default;
+        DeferredTask(std::coroutine_handle<promise_type> h) : handle(h) {}
+        DeferredTask(DeferredTask && other) noexcept : handle(other.handle) { other.handle = nullptr; }
+        ~DeferredTask() { if (handle) { handle.destroy(); } } // Clean up memory
+        
+
+        std::coroutine_handle<promise_type> handle;
+        
+        // await_ready - Declare that DeferredTask is awaitable, to allow nested coroutines
+        bool await_ready()
+        {
+            std::cout << "READY" << std::endl;
+            // Nothing to await - resume parent coroutine immediately
+            if (!handle) { return true; }
+            
+            // Do not suspend the parent coroutine if the nested coroutine finishes
+            return handle.done();
+        } 
+        
+        // await_suspend - DeferredTask begins immediately if called inside of a coroutine.
+        void await_suspend(std::coroutine_handle<> caller_handle)
+        {
+            std::cout << "RESUME" << std::endl;
+            handle.resume(); 
+        }
+    };
 }
 
 #define TP_RETURN_IF(CONDITION,...) if(CONDITION){ return __VA_ARGS__; }

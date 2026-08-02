@@ -48,6 +48,27 @@ namespace Tp
         return ret;
     }
     
+    template<typename T> requires std::is_integral_v<T>
+    T fromString(const std::string & string)
+    {
+        if constexpr(Tp::CSameBaseType<T,int> || Tp::CSameBaseType<T,unsigned int>)
+        {
+            return std::stoi(string);
+        }
+        else if constexpr(Tp::CSameBaseType<T,long> || Tp::CSameBaseType<T,unsigned long>)
+        {
+            return std::stol(string);
+        }
+        else if constexpr(Tp::CSameBaseType<T,long long> || Tp::CSameBaseType<T,unsigned long long>)
+        {
+            return std::stoll(string);
+        }
+        else
+        {
+            static_assert(false);
+        }
+    }
+    
     template<typename STR_T>
     STR_T toLower(const STR_T & value)
     {

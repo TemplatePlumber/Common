@@ -25,34 +25,9 @@ namespace Tp
     template<typename ... Ts>
     auto makeTuple(Ts && ... values) { return std::make_tuple(std::forward<Ts>(values) ...); };
     
-    template<typename T> requires (std::is_integral_v<T>)
-    T pow(T base, T exp)
-    {
-        if (exp < 0) {
-            if (base == 1) { return 1; }
-            else if (base == -1)
-            {
-                if(exp % 2 == 0) 
-                { 
-                    return 1;
-                } 
-                else 
-                {
-                    return -1;
-                }
-            }
-            return 0; // Integer division truncates 1 / (base^exp) to 0
-        }
-        
-        T ret = 1;
-        while (exp > 0)
-        {
-            if (exp & 1) { ret *= base; }
-            base *= base;
-            exp >>= 1;
-        }
-        return ret;
-    }
+
+    
+    using NotFound = std::out_of_range;
 }
 
 enum class Cardinal8 {N,NW,W,SW,S,SE,E,NE};
@@ -70,6 +45,7 @@ using str8 = std::string;
 template<typename T>
 using SPtr = std::shared_ptr<T>;
 
+
 //template<typename T>
 //auto createShared(){return std::make_shared<T>();}
 
@@ -77,12 +53,12 @@ template<size_t i,typename T> auto get(T && value) { return std::get<i>(std::for
 template<typename U, typename V> using Pair = std::pair<U,V>;
 template<typename ... Ts> using Tup = std::tuple<Ts ...>;
 template<typename T> using Vec = std::vector<T>;
-template<typename T> using BSet = std::set<T>;
+template<typename T, typename Compare = std::less<T>,typename Alloc = std::allocator<T> > using BSet = std::set<T,Compare,Alloc>;
 template<typename T> using HSet = std::unordered_set<T>;
 template<typename T,size_t I> using Block = std::array<T,I>;
 template<typename U, typename V> using BMap = std::map<U,V>;
 template<typename U, typename V> using HMap = std::unordered_map<U,V>;
 template<typename T> using Opt = std::optional<T>;
 
+
 #define CONTINUE_IF(x) if(x) { continue; };
-#define INVALID_ID (u64)-1

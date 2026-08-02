@@ -103,20 +103,54 @@ namespace Tp
             }
             catch(std::out_of_range & e){ return Tp::Undefined; }
         }
+
+        template <typename COL_T, typename ROW_T>
+        void inc(const COL_T & col, const ROW_T & row)
+        {
+            try
+            {
+                auto tblVal = this->get(col,row);
+                if(tblVal == Tp::Undefined)
+                {
+                    throw Tp::Escape{};
+                }
+                
+                i64 nv = Tp::fromString<i64>(tblVal.value())+1;
+                this->set(col,row,nv);
+            }
+            catch(...)
+            {
+                /*
+                    Act as if the initial value was zero if the 
+                    prior value was undefined or non-numerical.
+                */
+                this->set(col,row,"1");
+            }
+        }
         
         void flush()
         {
             std::stringstream ss;
             std::map<std::string, size_t> maxByColumn;
             size_t maxOfRowLabels = 0;
-
+            
+            for(const auto & c : _colLabels)
+            {
+                auto & cmax = maxByColumn[c];
+                cmax = std::max(cmax, c.length());
+            }
+            
             for(const auto & r : _rowLabels)
             {
                 maxOfRowLabels = std::max(maxOfRowLabels, r.length());
                 for(const auto & c : _colLabels)
                 {
-                    auto & cmax = maxByColumn[c];
-                    cmax = std::max(cmax, _valueByRowAndColumn[r][c].length());
+                    try
+                    {
+                        auto & cmax = maxByColumn[c];
+                        cmax = std::max(cmax, _valueByRowAndColumn.at(r).at(c).length());
+                    }
+                    catch(...){}
                 }
             }
             
@@ -132,14 +166,24 @@ namespace Tp
                 ss << std::format("{:>{}}", r, maxOfRowLabels);
                 for(const auto & c : _colLabels)
                 {
-                    if (_valueByRowAndColumn[r].contains(c))
+//                    if (_valueByRowAndColumn.at(r).contains(c))
+//                    {
+//                        ss << std::format(" {:>{}}", _valueByRowAndColumn[r][c], maxByColumn[c]);
+//                    }
+//                    else
+//                    {
+//                        ss << std::format(" {:>{}}", "-", maxByColumn[c]);
+//                    }
+                    
+                    try
                     {
-                        ss << std::format(" {:>{}}", _valueByRowAndColumn[r][c], maxByColumn[c]);
+                        ss << std::format(" {:>{}}", _valueByRowAndColumn.at(r).at(c), maxByColumn[c]);
                     }
-                    else
+                    catch(...)
                     {
                         ss << std::format(" {:>{}}", "-", maxByColumn[c]);
                     }
+
                 }
                 ss << "\n";
             }

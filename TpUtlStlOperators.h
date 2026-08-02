@@ -27,19 +27,29 @@ namespace Tp
         v1.push_back(v2);
     }
     
-    template<typename U, typename V> requires CIterableContainer<U> && CIterableContainer<V>
-    void append(U & v1,const V & v2)
-    {
-        for(const auto & v3 : v2)
-        {
-            append(v1,v3);
-        }
-    }
+//    template<typename T>
+//    concept CHasValueType = requires { T::value_type; };
+//    
+//    template<typename U, typename V> requires CIterableContainer<U> && CIterableContainer<V>
+//    void append(U & v1,const V & v2)
+//    {
+//        for(const auto & v3 : v2)
+//        {
+//            append(v1,v3);
+//        }
+//    }
+    
+    template<typename U,typename V>
+    concept CCanAppend = requires(U x, V y){ append(x,y); };
     
     template<typename U, typename V> requires CIterableContainer<U>
     void merge(U & v1,const V & v2)
     {
-        if constexpr(CIterableContainer<V>) for(const auto & v3 : v2)
+        if constexpr(CCanAppend<U,V>)
+        {
+            append(v1,v2);
+        }
+        else if constexpr(CIterableContainer<V>) for(const auto & v3 : v2)
         {
             append(v1,v3);
         }
