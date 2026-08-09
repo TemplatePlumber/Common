@@ -46,6 +46,17 @@ namespace Tp
             }
         }
         
+        inline void remove(const char * filePathStr)
+        {
+            std::filesystem::path filePath = filePathStr;
+
+            try
+            {
+                std::filesystem::remove(filePath);
+            }
+            catch (const std::filesystem::filesystem_error& e){}
+        }
+        
         std::string getBasename(const std::string & fileName);
     }
 }

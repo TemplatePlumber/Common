@@ -130,7 +130,7 @@ namespace Tp
         using TMinValue = std::invoke_result_t<FNC_T,typename T::value_type>;
         if(v1.empty()){ return Undefined; }
         
-        TMinValue least = (TMinValue)-1;
+        TMinValue least = {};
         const TValueType * leastPtr = nullptr;
         
         for(const auto & v2 : v1)
@@ -138,7 +138,7 @@ namespace Tp
             try
             {
                 auto val = fnc(v2);
-                if(val < least)
+                if(!leastPtr || val < least)
                 {
                     least = val;
                     leastPtr = &v2;
@@ -329,7 +329,7 @@ namespace Tp
     }
 
 
-    struct AssertException{ const std::string & msg; };
+    struct CriticalException{ const char * file; const char * line; const std::string & msg; };
     
     /*
         Coroutine Objects
@@ -429,17 +429,38 @@ namespace Tp
             handle.resume(); 
         }
     };
+    
+    
+    // Rate limiting
+    #define TP_RATE_LIMIT(LIMIT,IDX,...)\
+    {\
+        static Tp::RateLimiter TP_PP_CAT(RSVD_RL_,__LINE__)( LIMIT,[&](){ __VA_ARGS__ ; });\
+        TP_PP_CAT(RSVD_RL_,__LINE__).exec(IDX);\
+    }
+    
+    
+    template<typename FUNC_T>
+    struct RateLimiter
+    {
+        const u64 _period;
+        FUNC_T _func;
+        HMap<u64,u64> _invokationsByIndex;
+        RateLimiter(u64 period,FUNC_T func) : _period(period+1),_func(func){}
+        void exec(u64 index)
+        {
+            auto & invokations = _invokationsByIndex[index];
+            if(invokations == 0)
+            {
+                _func();
+            }
+            invokations = (invokations + 1) % _period;
+        }
+    };
 }
 
 #define TP_RETURN_IF(CONDITION,...) if(CONDITION){ return __VA_ARGS__; }
 #define TP_ERR_RETURN_IF(CONDITION,...) if(CONDITION){ std::cout << "Condition failed: " #CONDITION << std::endl; return __VA_ARGS__; }
 #define TP_ERR_IF(CONDITION) if(CONDITION){ std::cout << "Condition failed: " #CONDITION << std::endl; }
 #define TP_LOG(FMT,...)
-#define TP_ERROR_CHECKING_BGN try {
-#define TP_CHECK(condition) if(!(condition)){throw Tp::AssertException{.msg = #condition}; }
-#define TP_ERROR_CHECKING_END \
-    }\
-    catch(const Tp::AssertException & exception) \
-    {\
-        TP_LOG("Error: {}",exception.msg);\
-    }
+#define TP_CHECK(condition) if(!(condition)){throw Tp::CriticalException{.file=__FILE__, .line=TP_PP_STR(__LINE__), .msg = #condition}; }
+

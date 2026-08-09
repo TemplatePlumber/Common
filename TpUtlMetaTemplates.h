@@ -16,6 +16,11 @@ namespace Tp
     };
     
     template<typename T>
+    struct TTWrapper {
+        using Type = T;
+    };
+    
+    template<typename T>
     using BaseType = typename std::remove_pointer< std::remove_cvref_t<T> >::type;
 
     template<typename U, typename V>
@@ -47,6 +52,12 @@ namespace Tp
 
     template<typename T>
     concept CListContainer = CIterableContainer<T> && !CMapContainer<T> && requires (T x){ typename T::value_type; };
+    
+    template<typename T>
+    concept CTupleLikeContainer = requires (T x){ std::get<0>(x); };
+
+    template<typename T>
+    concept CIsAggregate = (CIterableContainer<T> || CTupleLikeContainer<T>);
     
     template<typename U, typename V>
     concept CValueEraseContainer = requires(Tp::BaseType<U> u, V v){u.erase(v);};

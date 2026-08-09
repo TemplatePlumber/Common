@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TpUtlMetaTemplates.h"
+#include <map>
 
 namespace Tp
 {
@@ -153,6 +154,49 @@ namespace Tp
             static_assert(false,"setDifference on non-containers is not allowed.");
         }
     }
+    
+    
+    
+    template<typename T,size_t I>
+    auto FGetNthContainerType()
+    {
+        if constexpr(!Tp::CIsAggregate<T>)
+        {
+            return TTWrapper<T>{};
+        }
+        else if constexpr( Tp::CIsAggregate<T> && I==0 &&  Tp::CTupleLikeContainer<T>)
+        {
+            //Assume only pairs for now
+            return FGetNthContainerType<std::tuple_element_t<0,T> , I>();
+        }
+        else if constexpr( Tp::CIsAggregate<T> && I!=0 &&  Tp::CTupleLikeContainer<T>)
+        {
+            //Assume only pairs for now
+            return FGetNthContainerType<std::tuple_element_t<1,T> , I-1>();
+        }
+        else if constexpr( Tp::CIsAggregate<T>         && !Tp::CTupleLikeContainer<T> &&  Tp::CValueTypeContainer<T>)
+        {
+            return FGetNthContainerType<typename T::value_type,I>();
+        }
+        else
+        {
+            static_assert(false);
+        }
+    }
+    
+    
+    template<typename T,size_t I>
+    using GetNthContainerType = typename decltype(FGetNthContainerType<T,I>())::Type;
+
+    
+
+    
+
+
+
+
+
+    
 }
 
 template<typename U, typename V> requires Tp::CIterableContainer<U> || Tp::CIterableContainer<V>
