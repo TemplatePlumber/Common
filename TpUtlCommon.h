@@ -14,6 +14,7 @@
 #include <ctime>
 #include <optional>
 #include <memory>
+#include <tuple>
 
 namespace Tp
 {
@@ -48,8 +49,11 @@ using SPtr = std::shared_ptr<T>;
 
 //template<typename T>
 //auto createShared(){return std::make_shared<T>();}
-
-template<size_t i,typename T> auto get(T && value) { return std::get<i>(std::forward(value)); };
+namespace Tp
+{
+    template<size_t i,typename T> auto get(T && value) { return std::get<i>(std::forward<T>(value)); };
+    template<size_t i,typename T> auto get(const T & value) { return std::get<i>(std::forward<T>(value)); };
+}
 template<typename U, typename V> using Pair = std::pair<U,V>;
 template<typename ... Ts> using Tup = std::tuple<Ts ...>;
 template<typename T> using Vec = std::vector<T>;

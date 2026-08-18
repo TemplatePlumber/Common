@@ -55,6 +55,12 @@ namespace Tp
     
     template<typename T>
     concept CTupleLikeContainer = requires (T x){ std::get<0>(x); };
+    
+    template<typename U, typename V>
+    concept CConvertibleTo = std::convertible_to<U,V>;
+    
+    template<typename U, typename V>
+    concept CIterativelyConvertibleTo = CValueTypeContainer<U> && CValueTypeContainer<V> && CConvertibleTo<typename U::value_type,typename V::value_type>;
 
     template<typename T>
     concept CIsAggregate = (CIterableContainer<T> || CTupleLikeContainer<T>);
@@ -137,31 +143,32 @@ namespace Tp
             using Return_t = typename Info_t::Return_t;
         };
         
+        template<typename T>
+        struct MethodPointerType{};
+        
         template<typename RET_T,typename HOLDER_T,typename ... ARG_Ts>
-        struct MethodPointerType
+        struct MethodPointerType<RET_T (HOLDER_T::*)(ARG_Ts ...)>
         {
             using Holder_t = HOLDER_T;
             using Return_t = RET_T;
-            RET_T (HOLDER_T::*pointer)(ARG_Ts ...) ;
-        };  
-              
+            using Pointer_t = RET_T (HOLDER_T::*)(ARG_Ts ...);
+        };
+        
+        template<typename RET_T,typename HOLDER_T,typename ... ARG_Ts>
+        struct MethodPointerType<RET_T (HOLDER_T::*)(ARG_Ts ...) const>
+        {
+            using Holder_t = HOLDER_T;
+            using Return_t = RET_T;
+            using Pointer_t = RET_T (HOLDER_T::*)(ARG_Ts ...) const;
+        };
+        
         template<auto PTR>
         struct MethodPointer
         {
-            using Info_t = decltype(MethodPointerType{.pointer=PTR});
+            using Info_t = MethodPointerType<decltype(PTR)>;
             using Holder_t = typename Info_t::Holder_t;
             using Return_t = typename Info_t::Return_t;
-            using Pointer_t = decltype(Info_t::pointer);
-        };
-        
-        template<typename T>
-        struct MemberPointerType2;
-    
-        template<typename HOLDER_T, typename MBR_T>
-        struct MemberPointerType2<MBR_T HOLDER_T::*>
-        {
-            using Holder_t = HOLDER_T;
-            using Member_t = MBR_T;
+            using Pointer_t = typename Info_t::Pointer_t;
         };
         
         template<typename HOLDER_T, typename MBR_T>

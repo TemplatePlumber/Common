@@ -50,6 +50,10 @@ namespace Tp
         {
             append(v1,v2);
         }
+        else if constexpr(CConvertibleTo<V,typename U::value_type>)
+        {
+            append(v1,v2);
+        }
         else if constexpr(CIterableContainer<V>) for(const auto & v3 : v2)
         {
             append(v1,v3);
@@ -222,11 +226,26 @@ U operator+(const U & v1, const V & v2)
 }
 
 
+
 template<typename T> requires Tp::CIterableContainer<T>
 void operator+=(T & v1, const typename T::value_type & v2)
 {
     Tp::merge(v1,v2);
 }
+
+template<typename T,typename  U> requires (Tp::CIterableContainer<T> && Tp::CIterableContainer<U> && !Tp::CSameBaseType<typename T::value_type,T>)
+void operator+=(T & v1, const U & v2)
+{
+   Tp::merge(v1,v2);
+}
+
+//template<typename T,typename U> requires (Tp::CIterableContainer<T>)
+//void operator+=(T & v1, const U & v2)
+//{
+//   Tp::merge(v1,v2);
+//}
+
+
 
 template<typename U, typename V> requires Tp::CIterableContainer<U> && Tp::CIterableContainer<V>
 U operator&(const U & v1, const V & v2)

@@ -93,4 +93,15 @@ namespace Tp
         }
         return ret;
     }
+    
+    template<typename T>
+    bool isClamped(const T & v1, const T & lo, const T & hi)
+    {
+        if(v1 >= lo && v1 <= hi)
+        {
+            return true;
+        }
+        
+        return false;
+    }
 }

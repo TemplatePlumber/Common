@@ -154,6 +154,37 @@ namespace Tp
         return Undefined;
     }
     
+    template<typename T, typename FNC_T> requires CIterableContainer<T>
+    Opt<typename T::value_type> maximize(const T & v1, FNC_T fnc)
+    {
+        using TValueType = typename T::value_type;
+        using TMinValue = std::invoke_result_t<FNC_T,typename T::value_type>;
+        if(v1.empty()){ return Undefined; }
+        
+        TMinValue most = {};
+        const TValueType * mostPtr = nullptr;
+        
+        for(const auto & v2 : v1)
+        {
+            try
+            {
+                auto val = fnc(v2);
+                if(!mostPtr || val > most)
+                {
+                    most = val;
+                    mostPtr = &v2;
+                }
+            }
+            catch(Pass pass){}
+        }
+        
+        if(mostPtr)
+        {
+            return *mostPtr;
+        }
+        return Undefined;
+    }
+    
     template<typename T>
     auto enumerateFnc(T & value)
     {
@@ -459,8 +490,9 @@ namespace Tp
 }
 
 #define TP_RETURN_IF(CONDITION,...) if(CONDITION){ return __VA_ARGS__; }
-#define TP_ERR_RETURN_IF(CONDITION,...) if(CONDITION){ std::cout << "Condition failed: " #CONDITION << std::endl; return __VA_ARGS__; }
-#define TP_ERR_IF(CONDITION) if(CONDITION){ std::cout << "Condition failed: " #CONDITION << std::endl; }
+#define TP_DT_ERR_LOG(CONDITION) std::cout << "(" << __FILE__ << ":" << __LINE__ << ")" << "Condition failed: " #CONDITION << std::endl
+#define TP_ERR_RETURN_IF(CONDITION,...) if(CONDITION){ TP_DT_ERR_LOG(CONDITION); return __VA_ARGS__; }
+#define TP_ERR_IF(CONDITION) if(CONDITION){ TP_DT_ERR_LOG(CONDITION); }
 #define TP_LOG(FMT,...)
 #define TP_CHECK(condition) if(!(condition)){throw Tp::CriticalException{.file=__FILE__, .line=TP_PP_STR(__LINE__), .msg = #condition}; }
 
